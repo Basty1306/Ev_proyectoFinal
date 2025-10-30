@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Usuario{% endblock %}
+{% block content %}
+<style>
+body {
+  background-color: #0f172a;
+  font-family: 'Poppins', sans-serif;
+  color: #f3f4f6;
+}
+.form-container {
+  max-width: 520px;
+  margin: 60px auto;
+  background-color: #1f2937;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.form-container h2 {
+  text-align: center;
+  color: #a78bfa;
+  margin-bottom: 1rem;
+}
+label {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #d1d5db;
+  font-weight: 500;
+}
+input, select {
+  width: 100%;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: #111827;
+  color: #f3f4f6;
+  padding: 10px;
+  margin-bottom: 1rem;
+}
+button {
+  background-color: #a78bfa;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  width: 100%;
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover { background-color: #8b5cf6; color: #fff; }
+a { color: #a78bfa; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* RUT + DV en la misma línea */
+.rut-group { display: flex; align-items: center; gap: 10px; }
+.rut-group input[type="text"]:first-child { flex: 3; }
+.rut-group input[type="text"]:last-child { flex: 1; text-align: center; }
+
+/* Errores */
+.alert { padding:.75rem 1rem; border-radius:.5rem; margin-bottom: 1rem; }
+.alert-danger { background:#dc2626; color:#fff; }
+.alert-info { background:#2563eb; color:#fff; }
+.field-error input, .field-error select { border-color:#ef4444 !important; }
+.error-text { color:#ef4444; font-size:.85rem; margin-top:-.5rem; margin-bottom: .8rem; }
+</style>
+
+<div class="form-container">
+  <h2>Registrar Nuevo Usuario</h2>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- RUT + DV (names deben coincidir con el form: rut, digitoV) -->
+    <div class="{% if form.rut.errors or form.digitoV.errors %}field-error{% endif %}">
+      <label for="id_rut">RUT (sin puntos ni guion)</label>
+      <div class="rut-group">
+        <input
+          type="text"
+          name="rut"
+          id="id_rut"
+          placeholder="Ej: 12345678"
+          required
+          inputmode="numeric"
+          pattern="[0-9]{6,8}"
+          maxlength="8"
+          title="Ingrese sólo números, entre 6 y 8 dígitos"
+          value="{{ form.data.rut|default_if_none:'' }}"
+        />
+        <span style="color:#f3f4f6;">-</span>
+        <input
+          type="text"
+          name="digitoV"
+          id="id_dv"
+          placeholder="9"
+          required
+          maxlength="1"
+          pattern="[0-9Kk]"
+          title="Ingrese un dígito (0-9) o K"
+          value="{{ form.data.digitoV|default_if_none:'' }}"
+        />
+      </div>
+      {% for err in form.rut.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+      {% for err in form.digitoV.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.nombre.errors %}field-error{% endif %}">
+      <label for="id_nombre">Nombre</label>
+      <input type="text" name="nombre" id="id_nombre" required value="{{ form.data.nombre|default_if_none:'' }}">
+      {% for err in form.nombre.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.apellidoP.errors %}field-error{% endif %}">
+      <label for="id_apellidoP">Apellido Paterno</label>
+      <input type="text" name="apellidoP" id="id_apellidoP" required value="{{ form.data.apellidoP|default_if_none:'' }}">
+      {% for err in form.apellidoP.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.apellidoM.errors %}field-error{% endif %}">
+      <label for="id_apellidoM">Apellido Materno</label>
+      <input type="text" name="apellidoM" id="id_apellidoM" required value="{{ form.data.apellidoM|default_if_none:'' }}">
+      {% for err in form.apellidoM.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.telefono.errors %}field-error{% endif %}">
+      <label for="id_telefono">Teléfono</label>
+      <input type="text" name="telefono" id="id_telefono" placeholder="+56 9 1234 5678" value="{{ form.data.telefono|default_if_none:'' }}">
+      {% for err in form.telefono.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.correo.errors %}field-error{% endif %}">
+      <label for="id_correo">Correo electrónico</label>
+      <input type="email" name="correo" id="id_correo" required placeholder="usuario@correo.cl" value="{{ form.data.correo|default_if_none:'' }}">
+      {% for err in form.correo.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.direccion.errors %}field-error{% endif %}">
+      <label for="id_direccion">Dirección</label>
+      <input type="text" name="direccion" id="id_direccion" placeholder="Ej: Av. Los Carrera 1234" value="{{ form.data.direccion|default_if_none:'' }}">
+      {% for err in form.direccion.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.id_comuna.errors %}field-error{% endif %}">
+      <label for="id_comuna">Comuna</label>
+      <select name="id_comuna" id="id_comuna" required>
+        {% for comuna in form.fields.id_comuna.queryset %}
+          <option value="{{ comuna.id_comuna }}"
+            {% if form.data.id_comuna|stringformat:"s" == comuna.id_comuna|stringformat:"s" %}selected{% endif %}>
+            {{ comuna.nombre }}
+          </option>
+        {% endfor %}
+      </select>
+      {% for err in form.id_comuna.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="{% if form.contrasena.errors %}field-error{% endif %}">
+      <label for="id_contrasena">Contraseña</label>
+      <input type="password" name="contrasena" id="id_contrasena" required placeholder="********">
+      {% for err in form.contrasena.errors %}<div class="error-text">{{ err }}</div>{% endfor %}
+    </div>
+
+    <button type="submit">Guardar Usuario</button>
+  </form>
+
+  <div style="text-align:center; margin-top:1rem;">
+    <a href="{% url 'dashboard' %}">← Volver al Panel</a>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const rut = document.getElementById('id_rut');
+    const dv  = document.getElementById('id_dv');
+
+    if (rut) {
+      rut.addEventListener('input', () => {
+        rut.value = rut.value.replace(/\\D+/g, '').slice(0, 8); // sólo dígitos, máx 8
+      });
+    }
+    if (dv) {
+      dv.addEventListener('input', () => {
+        let v = dv.value.replace(/[^0-9Kk]/g, '').slice(0, 1);
+        dv.value = v.toUpperCase();
+      });
+    }
+
+    // Auto-scroll al primer error
+    const firstErr = document.querySelector('.field-error input, .field-error select, .alert.alert-danger');
+    if (firstErr) { firstErr.scrollIntoView({behavior:'smooth', block:'center'}); }
+  })();
+</script>
+{% endblock %}
+
+
+

@@ -1,0 +1,271 @@
+{% block content %}
+
+<!-- === HEADER SUPERIOR === -->
+<header style="background:#1f2937; color:#a78bfa; padding:1rem 2rem;
+               display:flex; justify-content:space-between; align-items:center;
+               border-radius:0 0 12px 12px; box-shadow:0 3px 8px rgba(0,0,0,0.3);">
+  <h1 style="font-size:1.3rem; margin:0; display:flex; align-items:center; gap:10px;">
+    ⚖️ Tribunal de Disciplina - ANFA
+  </h1>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <span style="color:#e5e7eb; font-weight:500;">👋 Bienvenido, {{ user_nombre }}</span>
+    <a href="{% url 'logout' %}" 
+       style="background:#ef4444; color:#fff; padding:8px 14px; 
+              border-radius:8px; font-weight:600; text-decoration:none; 
+              transition:0.2s ease;">
+      🚪 Cerrar Sesión
+    </a>
+  </div>
+</header>
+
+<!-- === MENSAJE DE BIENVENIDA / ACTUALIZACIÓN === -->
+{% if mensaje_bienvenida %}
+<div id="msgPanel" style="background:#a78bfa; color:#111827; text-align:center; 
+            padding:10px; margin:16px auto; border-radius:8px; 
+            font-weight:600; max-width:400px;">
+  {{ mensaje_bienvenida }}
+</div>
+{% elif mensaje %}
+<div id="msgPanel" style="background:#a78bfa; color:#111827; text-align:center; 
+            padding:10px; margin:16px auto; border-radius:8px; 
+            font-weight:600; max-width:400px;">
+  {{ mensaje }}
+</div>
+{% endif %}
+
+<style>
+  body { background:#0f172a; color:#f3f4f6; font-family:'Poppins',sans-serif; }
+  .wrap { max-width:1300px; margin:36px auto; padding:0 16px; display:grid; grid-template-columns:2fr 1fr; gap:24px; }
+  .card { background:#111827; border:1px solid #1f2937; border-radius:12px; padding:18px 20px; box-shadow:0 4px 12px rgba(0,0,0,.3); }
+  h2 { color:#a78bfa; font-size:1.2rem; margin-bottom:10px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:8px 10px; border-bottom:1px solid #263042; text-align:left; vertical-align:middle; }
+  th { color:#a78bfa; font-weight:600; }
+  .scroll { max-height:420px; overflow:auto; border-radius:10px; }
+  .muted { color:#94a3b8; font-size:.9rem; text-align:center; padding:8px; }
+
+  .badge { display:inline-block; padding:4px 8px; border-radius:8px; font-size:.8rem; font-weight:600; }
+  .badge.pendiente { background:#facc15; color:#000; }
+  .badge.revision { background:#38bdf8; color:#000; }
+  .badge.aprobada { background:#22c55e; color:#fff; }
+  .badge.rechazada { background:#ef4444; color:#fff; }
+
+  .btn-icon {
+    background:#1e293b;
+    border:1px solid #475569;
+    color:#f9fafb;
+    border-radius:6px;
+    padding:5px 9px;
+    font-size:.85rem;
+    cursor:pointer;
+    transition:.2s ease;
+    text-decoration:none;
+  }
+  .btn-icon:hover { background:#374151; }
+
+  .btn-primario {
+    background:#a78bfa;
+    color:#111827;
+    border:none;
+    border-radius:6px;
+    padding:6px 12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s ease;
+  }
+  .btn-primario:hover { background:#8b5cf6; color:#fff; }
+
+  .right-column { display:flex; flex-direction:column; gap:18px; }
+
+  form input, form textarea {
+    background:#0f172a;
+    border:1px solid #334155;
+    border-radius:8px;
+    color:#e2e8f0;
+    padding:8px 10px;
+    width:100%;
+    font-size:.9rem;
+    transition:border .2s ease;
+  }
+  form input:focus, form textarea:focus { border-color:#38bdf8; outline:none; }
+  form label { color:#94a3b8; font-weight:500; display:block; margin-top:8px; margin-bottom:4px; }
+
+  .modal-bg {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center;
+    z-index:999;
+  }
+  .modal {
+    background:#1e293b; border-radius:10px; max-width:700px; width:90%;
+    color:#f3f4f6; padding:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);
+  }
+  .modal header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .modal header h3 { color:#a78bfa; margin:0; }
+  .modal-close { background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; }
+</style>
+
+<div class="wrap">
+  <!-- IZQUIERDA: ACTAS RECIBIDAS -->
+  <div>
+    <div class="card">
+      <h2>📋 Actas Recibidas</h2>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Partido</th><th>Incidentes</th><th>Estado</th><th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in actas_recibidas %}
+            <tr>
+              <td>{{ a.3|date:"d/m/Y" }}</td>
+              <td>{{ a.1 }} vs {{ a.2 }}</td>
+              <td>{{ a.4 }}</td>
+              <td>
+                <span class="badge 
+                  {% if a.5 == 'Pendiente' %}pendiente
+                  {% elif a.5 == 'En revisión' %}revision
+                  {% elif a.5 == 'Aprobada' %}aprobada
+                  {% elif a.5 == 'Rechazada' %}rechazada
+                  {% endif %}">
+                  {{ a.5 }}
+                </span>
+              </td>
+              <td>
+                <form method="POST" style="display:flex; gap:6px; align-items:center;">
+                  {% csrf_token %}
+                  <input type="hidden" name="id_acta" value="{{ a.0 }}">
+                  <select name="estado" style="background:#1e293b; color:#f9fafb; border-radius:6px; padding:5px; font-size:.85rem;">
+                    <option value="Pendiente" {% if a.5 == "Pendiente" %}selected{% endif %}>Pendiente</option>
+                    <option value="En revisión" {% if a.5 == "En revisión" %}selected{% endif %}>En revisión</option>
+                    <option value="Aprobada" {% if a.5 == "Aprobada" %}selected{% endif %}>Aprobada</option>
+                    <option value="Rechazada" {% if a.5 == "Rechazada" %}selected{% endif %}>Rechazada</option>
+                  </select>
+                  <button type="submit" class="btn-icon" title="Guardar estado">💾</button>
+                  <button type="button" class="btn-icon" title="Descargar acta"
+                    onclick="descargarActa('{{ a.0 }}','{{ a.3|date:'Y-m-d' }}','{{ a.1 }}','{{ a.2 }}')">⬇️</button>
+                  <button type="button" class="btn-icon" onclick="verActa('{{ a.1 }}','{{ a.2 }}','{{ a.4 }}','{{ a.3|date:'d/m/Y' }}','{{ a.5 }}')">👁️</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="muted">No hay actas pendientes o en revisión.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DERECHA -->
+  <div class="right-column">
+
+    <!-- ACTAS REVISADAS -->
+    <div class="card">
+      <h2>✅ Actas Revisadas</h2>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Fecha</th><th>Partido</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            {% for a in actas_revisadas %}
+            <tr>
+              <td>{{ a.3|date:"d/m/Y" }}</td>
+              <td>{{ a.1 }} vs {{ a.2 }}</td>
+              <td>
+                <span class="badge {% if a.5 == 'Aprobada' %}aprobada{% else %}rechazada{% endif %}">{{ a.5 }}</span>
+              </td>
+              <td>
+                <form method="POST" style="display:flex; gap:6px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="id_acta" value="{{ a.0 }}">
+                  <select name="estado" style="background:#1e293b; color:#f9fafb; border-radius:6px; padding:5px; font-size:.85rem;">
+                    <option value="Aprobada" {% if a.5 == "Aprobada" %}selected{% endif %}>Aprobada</option>
+                    <option value="Rechazada" {% if a.5 == "Rechazada" %}selected{% endif %}>Rechazada</option>
+                    <option value="En revisión">En revisión</option>
+                  </select>
+                  <button type="submit" class="btn-icon" title="Guardar estado">💾</button>
+                  <button type="button" class="btn-icon" title="Descargar acta"
+                    onclick="descargarActa('{{ a.0 }}','{{ a.3|date:'Y-m-d' }}','{{ a.1 }}','{{ a.2 }}')">⬇️</button>
+                  <button type="button" class="btn-icon" onclick="verActa('{{ a.1 }}','{{ a.2 }}','{{ a.4 }}','{{ a.3|date:'d/m/Y' }}','{{ a.5 }}')">👁️</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="muted">No hay actas revisadas.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SANCIONES -->
+    <div class="card">
+      <h2>⚠️ Sanciones</h2>
+      <p class="muted">Integración pendiente con la tabla <em>sanciones</em>.</p>
+    </div>
+
+    <!-- AUDIENCIAS -->
+    <div class="card">
+      <h2>📅 Agendar Audiencia</h2>
+      <form method="post" action="#">
+        {% csrf_token %}
+        <label>Fecha</label><input type="date" name="fecha">
+        <label>Hora</label><input type="time" name="hora">
+        <label>Partes Citadas</label><input type="text" name="partes" placeholder="Jugador, Árbitro, Dirigente…">
+        <label>Motivo</label><textarea name="motivo" placeholder="Detalle breve del motivo…"></textarea>
+        <button class="btn-primario" type="submit">Agendar</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-bg" id="modalActa">
+  <div class="modal">
+    <header>
+      <h3>📄 Detalle del Acta</h3>
+      <button class="modal-close" onclick="cerrarModal()">✖</button>
+    </header>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+function descargarActa(id, fecha, local, visita) {
+  const clean = s => String(s).trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+  const nombre = `${fecha}_${clean(local)}_vs_${clean(visita)}.pdf`;
+  window.location.href = `/tribunal/acta/${encodeURIComponent(id)}/descargar/?nombre=${encodeURIComponent(nombre)}`;
+}
+
+function verActa(local, visita, incidentes, fecha, estado) {
+  const modal = document.getElementById('modalActa');
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `
+    <p><strong>Partido:</strong> ${local} vs ${visita}</p>
+    <p><strong>Fecha:</strong> ${fecha}</p>
+    <p><strong>Estado:</strong> ${estado}</p>
+    <p><strong>Incidentes:</strong> ${incidentes}</p>
+  `;
+  modal.style.display = "flex";
+}
+
+function cerrarModal() {
+  document.getElementById('modalActa').style.display = "none";
+}
+
+// Cerrar modal al hacer clic fuera
+window.onclick = e => {
+  const modal = document.getElementById('modalActa');
+  if (e.target === modal) modal.style.display = "none";
+};
+
+// Desvanecer mensaje
+setTimeout(() => {
+  const msg = document.getElementById('msgPanel');
+  if (msg) msg.style.opacity = '0';
+}, 3000);
+</script>
+
+{% endblock %}

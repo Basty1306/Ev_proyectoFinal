@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Panel del Árbitro{% endblock %}
+
+{# 🚫 Evita duplicados: no renderizar mensajes del base.html en esta página #}
+{% block messages %}{% endblock %}
+
+{% block content %}
+<style>
+  .container { max-width:1300px; margin:40px auto; padding:0 20px; color:#333; }
+
+  .page-header {
+    background:linear-gradient(90deg,#0a2a43,#1e4d79);
+    color:#fff; padding:40px; text-align:center;
+    border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,.2);
+  }
+  .page-header h1 { font-size:2.2rem; margin:0 0 8px 0; }
+
+  .alerts { max-width:1300px; margin:16px auto 0; padding:0 20px; }
+  .alert { padding:.75rem 1rem; border-radius:.5rem; margin-bottom:.5rem; font-weight:500; }
+  .alert.ok{background:#d1fae5;color:#065f46;border:1px solid #10b981;}
+  .alert.err{background:#fee2e2;color:#7f1d1d;border:1px solid #ef4444;}
+  .alert.info{background:#e0e7ff;color:#1e3a8a;border:1px solid #6366f1;}
+  .alert.warn{background:#fef3c7;color:#92400e;border:1px solid #f59e0b;}
+
+  .profile-content {
+    background:#fff; border-radius:12px; padding:40px;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    display:grid; grid-template-columns:1fr 2fr; gap:40px;
+    margin-top:16px;
+  }
+  .profile-left {
+    text-align:center; background:#f7f9fc; padding:30px; border-radius:12px;
+    box-shadow:inset 0 0 10px rgba(0,0,0,.05);
+  }
+  .profile-pic {
+    width:180px; height:180px; border-radius:50%;
+    background:linear-gradient(135deg,#007bff,#1e4d79);
+    display:flex; align-items:center; justify-content:center;
+    font-size:4em; color:#fff; margin:0 auto 20px;
+  }
+  .profile-name { font-size:1.8em; font-weight:700; color:#0a2a43; }
+  .profile-category { color:#007bff; font-weight:500; margin-bottom:25px; }
+
+  .info-section {
+    background:#f7f9fc; padding:25px; border-radius:12px; margin-bottom:20px;
+    box-shadow:inset 0 0 10px rgba(0,0,0,.03);
+  }
+  .info-section h2 {
+    color:#0a2a43; margin:0 0 15px 0; border-bottom:3px solid #007bff;
+    padding-bottom:5px; font-size:1.2rem;
+  }
+  .info-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; }
+  .info-item { background:#fff; padding:15px; border-left:4px solid #007bff; border-radius:8px; }
+  .info-label { font-weight:600; font-size:.85em; color:#555; margin-bottom:5px; }
+  .info-value { color:#222; font-size:1.05em; }
+
+  .actions-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:10px; }
+  .action-btn {
+    display:inline-block; text-align:center; background:#1f2937; color:#fff;
+    border:none; border-radius:10px; padding:12px 14px; cursor:pointer; text-decoration:none;
+    transition:.2s;
+  }
+  .action-btn:hover { background:#0b1220; }
+
+  .btn-edit-link {
+    margin-top:16px; display:inline-block; background:#a78bfa;
+    border:none; border-radius:8px; padding:10px 16px;
+    font-weight:600; color:#111827; text-decoration:none;
+  }
+  .btn-edit-link:hover { background:#8b5cf6; color:#fff; }
+
+  @media (max-width:1024px){
+    .profile-content{ grid-template-columns:1fr; }
+    .actions-grid{ grid-template-columns:1fr; }
+  }
+</style>
+
+<div class="page-header">
+  <h1>👨‍⚖️ Perfil del Árbitro</h1>
+  <p>Información personal y estadísticas</p>
+</div>
+
+<div class="alerts">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert {% if 'success' in message.tags %}ok{% elif 'error' in message.tags %}err{% elif 'warning' in message.tags %}warn{% else %}info{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<div class="container">
+  <div class="profile-content">
+    <div class="profile-left">
+      <div class="profile-pic">⚽</div>
+      <h2 class="profile-name">{{ usuario.nombre }} {{ usuario.apellidoP }} {{ usuario.apellidoM }}</h2>
+      <p class="profile-category">{{ usuario.cargo }}</p>
+    </div>
+
+    <div class="profile-right">
+      <div class="info-section">
+        <h2>Información Personal</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">RUT</div>
+            <div class="info-value">{{ usuario.rut }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Correo</div>
+            <div class="info-value">{{ usuario.correo }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Teléfono</div>
+            <div class="info-value">{{ usuario.telefono|default:"—" }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Dirección</div>
+            <div class="info-value">{{ usuario.direccion|default:"—" }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Comuna</div>
+            <div class="info-value">{{ usuario.comuna_nombre|default:"—" }}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Cargo Arbitral</div>
+            <div class="info-value">{{ usuario.cargo }}</div>
+          </div>
+        </div>
+
+        <a href="{% url 'editar_perfil' %}" class="btn-edit-link">Editar Perfil</a>
+      </div>
+
+      <div class="info-section">
+        <h2>Accesos</h2>
+        <div class="actions-grid">
+          <a class="action-btn" href="{% url 'partidos_asignados' %}"> 📄 Mis partidos asignados </a>
+          <a class="action-btn" href="{% url 'calendario_arbitro' %}"> 📅 Mi calendario </a>
+          <a class="action-btn" href="{% url 'actas_arbitro' %}"> 📄 Actas </a>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+
+

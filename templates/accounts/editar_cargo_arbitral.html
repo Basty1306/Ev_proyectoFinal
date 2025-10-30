@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}Editar Cargo Arbitral{% endblock %}
+{% block content %}
+
+<style>
+  .page-wrap{max-width:1100px;margin:0 auto;}
+  .card{
+    background:#111827;border:1px solid #2b3342;border-radius:16px;
+    padding:1.5rem; box-shadow:0 8px 24px rgba(0,0,0,.35);
+  }
+  .title{
+    text-align:center;color:#c4b5fd;font-size:1.6rem;font-weight:700;margin:.25rem 0 1rem;
+  }
+
+  /* --- formulario superior --- */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .form-row{display:flex;gap:.75rem;align-items:center}
+  .label{color:#9ca3af;font-weight:600;font-size:.95rem}
+  .input, .select, .btn{
+    border-radius:10px;border:1px solid #374151;background:#0f172a;color:#f3f4f6;
+    padding:.7rem .9rem; box-sizing:border-box;
+  }
+  .input:focus, .select:focus{outline:none;border-color:#8b5cf6;box-shadow:0 0 0 1px rgba(139,92,246,.35)}
+  .btn-primary{background:#a78bfa;border-color:#a78bfa;color:#111827;font-weight:700;cursor:pointer}
+  .btn-primary:hover{background:#8b5cf6;color:#fff}
+  .btn{cursor:pointer}
+  .w-full{width:100%}
+
+  @media (max-width:860px){ .form-grid{grid-template-columns:1fr} }
+
+  /* --- tabla árbitros --- */
+  .table-wrap{margin-top:1.25rem;border-radius:14px;border:1px solid #2b3342;overflow:hidden}
+  .table-scroll{overflow:auto;max-height:520px}
+  table{width:100%;border-collapse:collapse;min-width:720px}
+  thead th{
+    position:sticky;top:0;background:#0f172a;z-index:1;
+    color:#a78bfa;font-weight:700;padding:12px 14px;border-bottom:1px solid #2f3747;text-align:left
+  }
+  tbody td{padding:12px 14px;border-bottom:1px solid #242b39}
+  tbody tr:nth-child(odd){background:#0f1624}
+  tbody tr:hover{background:rgba(167,139,250,.08)}
+  .row-arbitro.selected{background:rgba(167,139,250,.16)}
+
+  .col-rut{width:160px;white-space:nowrap}
+  .col-nombre{width:260px}
+  .col-apellido{width:260px}
+  .col-cargo{min-width:220px}
+
+  /* chip cargo */
+  .cargo-chip{
+    display:inline-flex;align-items:center;gap:.5rem;background:#0b1322;border:1px solid #364055;
+    border-radius:9999px;padding:6px 10px;max-width:100%
+  }
+  .cargo-chip .badge{background:#a78bfa;color:#111827;font-weight:800;border-radius:9999px;padding:2px 8px;font-size:.8rem}
+  .cargo-chip .text{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* mensajes locales (opcional) */
+  .flash{background:#a78bfa;color:#111827;border-radius:10px;padding:10px;text-align:center;font-weight:700;margin:.5rem 0}
+
+  /* utilidades */
+  .center{text-align:center}
+  .mt-16{margin-top:1rem}
+  .mt-24{margin-top:1.5rem}
+  .link{color:#a78bfa;text-decoration:none}
+  .link:hover{text-decoration:underline}
+</style>
+
+<div class="page-wrap">
+  <div class="card">
+    <div class="title">Gestión de Cargos Arbitrales</div>
+
+    {# MUESTRA mensajes aquí dentro (si prefieres, elimina este bloque y usa los de base.html) #}
+    {% if messages %}
+      {% for message in messages %}
+        <div class="flash">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Formulario de búsqueda/edición -->
+    <form method="post" id="form-cargo" class="form-grid">
+      {% csrf_token %}
+
+      <div>
+        <div class="label">Buscar Árbitro por RUT</div>
+        <div class="form-row">
+          <input class="input w-full" type="text" name="rut" id="rut"
+                 placeholder="Ej: 12345678-9" required
+                 pattern="[0-9]{6,8}-[0-9Kk]" title="Formato: 6 a 8 dígitos, guion y DV (0-9 o K)">
+          <button type="button" id="buscar" class="btn btn-primary">Buscar</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Cargo Actual</div>
+        <input class="input w-full" type="text" id="cargo_actual" placeholder="Selecciona un árbitro" readonly>
+      </div>
+
+      <div>
+        <div class="label">Seleccionar Nuevo Cargo</div>
+        <select class="select w-full" name="id_cargo" id="id_cargo" required>
+          <option value="">— Selecciona un cargo arbitral —</option>
+          {% for c in cargos %}
+            <option value="{{ c.0 }}">{{ c.1 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="center">
+        <button type="submit" class="btn btn-primary w-full">Actualizar Cargo</button>
+      </div>
+    </form>
+
+    <!-- Tabla -->
+    <div class="mt-24 center" style="color:#c4b5fd;font-weight:700;">Lista de Árbitros</div>
+
+    <div class="table-wrap mt-16">
+      <div class="table-scroll">
+        <table id="tabla-arbitros">
+          <thead>
+            <tr>
+              <th class="col-rut">RUT</th>
+              <th class="col-nombre">Nombre</th>
+              <th class="col-apellido">Apellido</th>
+              <th class="col-cargo">Cargo Actual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {# Vista trae: (rut, dv, nombre, apellidop, cargo) #}
+            {% for a in arbitros %}
+            <tr class="row-arbitro"
+                data-rut="{{ a.0 }}"
+                data-dv="{{ a.1 }}"
+                data-nombre="{{ a.2 }}"
+                data-apellido="{{ a.3 }}"
+                data-cargo="{{ a.4|default:'Sin cargo asignado' }}">
+              <td class="col-rut">{{ a.0 }}-{{ a.1 }}</td>
+              <td class="col-nombre">{{ a.2 }}</td>
+              <td class="col-apellido">{{ a.3 }}</td>
+              <td class="col-cargo">
+                {% if a.4 %}
+                  <span class="cargo-chip">
+                    <span class="badge">Cargo</span>
+                    <span class="text">{{ a.4 }}</span>
+                  </span>
+                {% else %}
+                  <span style="color:#9ca3af">Sin cargo asignado</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No hay árbitros registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="center mt-24">
+      <a href="{% url 'dashboard' %}" class="link">← Volver al Panel</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const tbody     = document.querySelector('#tabla-arbitros tbody');
+  const inputRut  = document.getElementById('rut');
+  const cargoAct  = document.getElementById('cargo_actual');
+  const selCargo  = document.getElementById('id_cargo');
+  const btnBuscar = document.getElementById('buscar');
+
+  if (!tbody) return;
+
+  function selectOptionByText(selectEl, text) {
+    const needle = (text || '').trim().toLowerCase();
+    let found = false;
+    for (const opt of selectEl.options) {
+      if (opt.text.trim().toLowerCase() === needle) { opt.selected = true; found = true; break; }
+    }
+    if (!found && selectEl.options.length) selectEl.selectedIndex = 0;
+  }
+
+  function clearSelected() {
+    document.querySelectorAll('.row-arbitro.selected').forEach(tr=>tr.classList.remove('selected'));
+  }
+
+  // Click en fila → cargar datos
+  tbody.addEventListener('click', function (e) {
+    const tr = e.target.closest('tr.row-arbitro'); if (!tr) return;
+    clearSelected(); tr.classList.add('selected');
+
+    const rut = tr.dataset.rut || '';
+    const dv  = (tr.dataset.dv || '').toUpperCase();
+    const cargo = tr.dataset.cargo || 'Sin cargo asignado';
+
+    inputRut.value = rut && dv ? `${rut}-${dv}` : '';
+    cargoAct.value = cargo;
+    selectOptionByText(selCargo, cargo);
+  });
+
+  // Buscar → filtra por rut/nombre/apellido
+  btnBuscar?.addEventListener('click', function () {
+    const filtro = (inputRut.value || '').toLowerCase().trim();
+    const rows = tbody.querySelectorAll('tr.row-arbitro');
+    rows.forEach(row => {
+      const rut  = `${row.dataset.rut}-${(row.dataset.dv || '').toLowerCase()}`;
+      const nom  = (row.dataset.nombre   || '').toLowerCase();
+      const ape  = (row.dataset.apellido || '').toLowerCase();
+      const match = rut.includes(filtro) || nom.includes(filtro) || ape.includes(filtro);
+      row.style.display = match ? '' : 'none';
+    });
+  });
+
+  // Normaliza el campo RUT (solo dígitos, guion y K)
+  inputRut?.addEventListener('input', () => {
+    let v = inputRut.value.replace(/[^0-9Kk-]/g, '').toUpperCase();
+    const parts = v.split('-');
+    if (parts.length > 2) v = `${parts[0]}-${parts.slice(1).join('')}`;
+    const [num='', dv=''] = v.split('-');
+    const numLim = num.replace(/[^0-9]/g,'').slice(0,8);
+    const dvLim  = (dv||'').replace(/[^0-9K]/g,'').slice(0,1);
+    inputRut.value = v.includes('-') ? (dv ? `${numLim}-${dvLim}` : `${numLim}-`) : numLim;
+  });
+})();
+</script>
+
+{% endblock %}
+
+

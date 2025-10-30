@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Editar Perfil (Admin){% endblock %}
+{% block content %}
+<style>
+  /* puedes reutilizar el mismo CSS del estilo dark que ya usas */
+  body { background-color:#0f172a; font-family:'Poppins',sans-serif; color:#f3f4f6; }
+  .form-box { max-width:720px; margin:2rem auto; background:#1f2937; padding:1.8rem; border-radius:12px; }
+  input, select, textarea { width:100%; border:1px solid #374151; border-radius:6px; background:#111827; color:#f3f4f6; padding:10px; margin-bottom:1rem; }
+  button { background:#a78bfa; border:none; border-radius:8px; padding:10px 16px; color:#111827; font-weight:600; cursor:pointer; }
+  button:hover { background:#8b5cf6; color:#fff; }
+  a.back { display:inline-block; margin-top:.75rem; color:#a78bfa; }
+</style>
+
+<div class="form-box">
+  <h2>Editar Perfil: {{ usuario.rut }}</h2>
+
+  {% if messages %}
+    <div style="margin-bottom:.75rem;">
+      {% for message in messages %}
+        <div style="border:1px solid #4b5563; background:#111827; padding:.5rem .75rem; border-radius:6px; margin-bottom:.5rem;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div>
+        <label>Nombre</label>
+        <input type="text" name="nombre" value="{{ usuario.nombre }}" required>
+      </div>
+      <div>
+        <label>Apellido Paterno</label>
+        <input type="text" name="apellidop" value="{{ usuario.apellidoP }}" required>
+      </div>
+      <div>
+        <label>Apellido Materno</label>
+        <input type="text" name="apellidom" value="{{ usuario.apellidoM }}">
+      </div>
+      <div>
+        <label>Correo</label>
+        <input type="email" name="correo" value="{{ usuario.correo }}">
+      </div>
+      <div>
+        <label>Teléfono</label>
+        <input type="text" name="telefono" value="{{ usuario.telefono }}">
+      </div>
+      <div>
+        <label>Dirección</label>
+        <input type="text" name="direccion" value="{{ usuario.direccion }}">
+      </div>
+      <div style="grid-column:1/-1;">
+        <label>Comuna</label>
+        <select name="id_comuna">
+          <option value="">(Sin comuna)</option>
+          {% for c in comunas %}
+            <option value="{{ c.0 }}" {% if usuario.id_comuna == c.0 %}selected{% endif %}>{{ c.1 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <button type="submit">Guardar cambios</button>
+  </form>
+
+  <a href="{% url 'asignar_rol' %}" class="back">← Volver a Asignar Rol</a>
+</div>
+{% endblock %}

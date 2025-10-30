@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Sesión cerrada{% endblock %}
+{% block content %}
+<div class="form-container" style="text-align:center;">
+  <h2>Sesión cerrada correctamente</h2>
+  <p>Serás redirigido al inicio de sesión en unos segundos...</p>
+  <script>
+    setTimeout(() => { window.location.href = "/login/"; }, 1500);
+  </script>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<style>
+  .wrap { max-width: 1200px; margin: 0 auto; }
+
+  /* encabezado */
+  .welcome {
+    text-align: center;
+    margin: 1.5rem 0 2rem 0;
+  }
+  .welcome h2 {
+    color: #c4b5fd;
+    font-size: 1.8rem;
+    margin: .25rem 0;
+  }
+  .welcome p { color:#cbd5e1; margin:.25rem 0; }
+
+  /* grid de stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 1.25rem;
+  }
+  .card {
+    background: #111827;
+    border: 1px solid #2b3342;
+    border-radius: 14px;
+    padding: 1.25rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  }
+  .card h3 {
+    color:#a78bfa; font-size: 1.05rem; font-weight: 600; margin: 0 0 .5rem 0; text-align:center;
+  }
+  .card .num {
+    font-size: 1.9rem; font-weight: 700; text-align:center; color:#f3f4f6;
+  }
+
+  /* acciones rápidas */
+  .section-title {
+    display:flex; align-items:center; justify-content:center; gap:.5rem;
+    color:#c4b5fd; margin: 2.25rem 0 1rem 0; font-weight:700;
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 1.25rem;
+  }
+  .action {
+    background:#111827; border:1px solid #2b3342; border-radius:14px; padding:1.25rem;
+    text-align:center; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  }
+  .action h4 { color:#a78bfa; margin:.25rem 0 .5rem 0; }
+  .action p { color:#cbd5e1; font-size:.95rem; min-height: 2.3rem; }
+  .action a.btn {
+    display:inline-block; margin-top:.75rem; background:#a78bfa; color:#111827; padding:.45rem .9rem;
+    border-radius:10px; font-weight:700; text-decoration:none; transition:.25s;
+  }
+  .action a.btn:hover { background:#8b5cf6; color:#fff; }
+
+  @media (max-width: 1100px) {
+    .stats, .actions { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  }
+  @media (max-width: 640px) {
+    .stats, .actions { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <!-- Encabezado / Bienvenida (sin usar messages) -->
+  <div class="welcome">
+    <div style="display:inline-block;background:#16a34a;color:#0b1220;padding:.5rem 1rem;border-radius:10px;font-weight:700;">
+      Bienvenido {{ user_nombre }}
+    </div>
+    <h2>👋 Bienvenido, {{ user_nombre }}</h2>
+    <p>Rol: {{ user_rol }}</p>
+  </div>
+
+  <!-- Métricas -->
+  <div class="stats">
+    <div class="card">
+      <h3>Usuarios Activos</h3>
+      <div class="num">{{ usuarios_activos }}</div>
+    </div>
+    <div class="card">
+      <h3>Usuarios Inactivos</h3>
+      <div class="num">{{ usuarios_inactivos }}</div>
+    </div>
+    <div class="card">
+      <h3>Administradores</h3>
+      <div class="num">{{ administradores }}</div>
+    </div>
+    <div class="card">
+      <h3>Árbitros</h3>
+      <div class="num">{{ arbitros }}</div>
+    </div>
+  </div>
+
+  <!-- Partidos sin árbitro (tarjeta aparte para que destaque) -->
+  <div class="section-title">⚙️ Acciones Rápidas</div>
+
+  <div class="actions">
+    <div class="action">
+      <h4>Registrar Usuario</h4>
+      <p>Agregar nuevos usuarios al sistema.</p>
+      <a class="btn" href="{% url 'registrar_usuario' %}">Ir</a>
+    </div>
+    <div class="action">
+      <h4>Asignar Rol</h4>
+      <p>Gestionar permisos y funciones de usuarios.</p>
+      <a class="btn" href="{% url 'asignar_rol' %}">Ir</a>
+    </div>
+    <div class="action">
+      <h4>Cuerpo Arbitral</h4>
+      <p>Editar funciones y cargos de árbitros.</p>
+      <a class="btn" href="{% url 'editar_cargo_arbitral' %}">Ir</a>
+    </div>
+    <div class="action">
+      <h4>Asignar Partidos</h4>
+      <p>Designar árbitro a los partidos programados.</p>
+      <a class="btn" href="{% url 'asignar_partidos' %}">Ir</a>
+    </div>
+  </div>
+
+  <!-- Tarjeta de partidos sin árbitro (informativa) -->
+  <div style="margin-top:2rem;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.25rem;">
+    <div class="card" style="grid-column:1/-1; display:flex; justify-content:center; align-items:center; gap:1rem;">
+      <h3 style="margin:0;">Partidos sin árbitro</h3>
+      <div class="num" style="margin:0;">{{ partidos_sin_arbitro }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+

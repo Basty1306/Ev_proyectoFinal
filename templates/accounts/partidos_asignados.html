@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Mis Partidos Asignados{% endblock %}
+{% block content %}
+<style>
+  body { background:#f4f6fb; color:#333; font-family:'Poppins',sans-serif; }
+  .wrap { max-width: 1250px; margin: 36px auto; padding: 0 16px; display:grid; grid-template-columns:2fr 1fr; gap:20px; }
+
+  .header { background: linear-gradient(90deg,#0a2a43,#1e4d79); color:#fff; padding:24px; border-radius:12px 12px 0 0; }
+  .header h1 { margin:0; font-size:1.8rem; }
+
+  .card { background:#fff; padding:24px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.08); }
+
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .toolbar input { border:1px solid #d5d7de; border-radius:8px; padding:8px 10px; }
+
+  table { width:100%; border-collapse: collapse; }
+  th, td { padding:10px 8px; border-bottom:1px solid #e9ebf1; text-align:left; font-size:0.92rem; }
+  th { color:#0a2a43; font-weight:600; }
+  tr:hover { background:#f7f9fd; transition:0.2s ease; }
+
+  .pill { display:inline-block; padding:4px 10px; border-radius:9999px; font-size:.8rem; font-weight:500; }
+  .pill.programado { background:#eef2ff; color:#3949ab; }
+  .pill.finalizado { background:#dcfce7; color:#166534; }
+
+  .btn-acta {
+  background:#a78bfa; 
+  color:#111827; 
+  border-radius:6px; 
+  padding:4px 10px;   /* 🔹 antes era 6px 12px — más delgado ahora */
+  font-weight:500;    /* 🔹 antes era 600 — más equilibrado */
+  font-size:0.85rem;  /* 🔹 un poco más pequeño */
+  text-decoration:none;
+  display:inline-flex; 
+  align-items:center;
+  gap:6px;
+  transition:all .2s ease;
+  white-space:nowrap; /* 🔹 evita que el texto se parta en dos líneas */
+  border:1px solid transparent;
+  }
+  .btn-acta:hover {
+  background:#8b5cf6;
+  color:#fff;
+  border-color:#7c3aed;
+  transform:translateY(-1px);
+  box-shadow:0 3px 8px rgba(124,58,237,0.3);
+}
+  /* Botón gris deshabilitado con tooltip */
+  .btn-acta.disabled {
+    background:#d1d5db;
+    color:#6b7280;
+    cursor:not-allowed;
+    position: relative;
+    pointer-events: auto;
+  }
+  .btn-acta.disabled::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111827;
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+  }
+  .btn-acta.disabled:hover::after { opacity: 1; }
+
+  .section-title { font-size:1.2rem; color:#1e3a8a; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .empty { text-align:center; color:#666; padding: 20px 0; }
+</style>
+
+<div class="wrap">
+  <!-- 🟣 IZQUIERDA: Partidos Asignados -->
+  <div>
+    <div class="header">
+      <h1>⚽ Mis Partidos Asignados</h1>
+      <p style="margin:.2rem 0 0; opacity:.9;">Consulta y filtra tus designaciones</p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <input type="date" id="fdesde" />
+        <input type="date" id="fhasta" />
+        <input type="text" id="buscar" placeholder="Buscar por club o cancha…" />
+      </div>
+
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Local</th>
+            <th>Visita</th>
+            <th>Cancha</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in partidos %}
+          {% if not p.tiene_acta %}
+          <tr>
+            <td data-fecha="{{ p.fecha|date:'Y-m-d' }}">{{ p.fecha|date:"d/m/Y" }}</td>
+            <td>{{ p.hora }}</td>
+            <td>{{ p.local }}</td>
+            <td>{{ p.visita }}</td>
+            <td>{{ p.cancha }}</td>
+            <td>
+              {% if p.estado|lower == "programado" %}
+                <span class="pill programado">Programado</span>
+              {% elif p.estado|lower == "finalizado" %}
+                <span class="pill finalizado">Finalizado</span>
+              {% else %}
+                <span class="pill">{{ p.estado }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if p.estado|lower == "finalizado" %}
+                <a href="{% url 'redactar_acta' p.id %}" class="btn-acta">📝 Redactar Acta</a>
+              {% else %}
+                <a class="btn-acta disabled" data-tooltip="Acta aún no disponible">📝 Redactar Acta</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+          {% empty %}
+          <tr><td colspan="7" class="empty">No tienes partidos asignados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 🔵 DERECHA: Actas Redactadas -->
+  <div>
+    <div class="card">
+      <h2 class="section-title">🧾 Actas Redactadas</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Partido</th>
+            <th>Estado</th>
+           <!--  <th>Acción</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in partidos %}
+          {% if p.tiene_acta %}
+          <tr>
+            <td>{{ p.fecha|date:"d/m/Y" }}</td>
+            <td>{{ p.local }} vs {{ p.visita }}</td>
+            <td><span class="pill finalizado">Enviada</span></td>
+            <!-- <td>
+              <a href="{% url 'actas_arbitro' %}?ver={{ p.id }}" class="btn-acta" style="background:#60a5fa; color:#fff;">👁️ Ver Acta</a>
+            </td>
+            -->
+          </tr>
+          {% endif %}
+          {% empty %}
+          <tr><td colspan="4" class="empty">No tienes actas redactadas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const buscar = document.getElementById('buscar');
+  const fdesde = document.getElementById('fdesde');
+  const fhasta = document.getElementById('fhasta');
+  const rows = Array.from(document.querySelectorAll('#tabla tbody tr'));
+
+  function applyFilter(){
+    const q = (buscar.value || '').toLowerCase();
+    const d1 = fdesde.value ? new Date(fdesde.value) : null;
+    const d2 = fhasta.value ? new Date(fhasta.value) : null;
+
+    rows.forEach(tr=>{
+      const fechaStr = tr.querySelector('td[data-fecha]').dataset.fecha;
+      const fecha = fechaStr ? new Date(fechaStr+'T00:00:00') : null;
+      const text = tr.innerText.toLowerCase();
+
+      let visible = true;
+      if(q && !text.includes(q)) visible = false;
+      if(d1 && fecha && fecha < d1) visible = false;
+      if(d2 && fecha && fecha > d2) visible = false;
+
+      tr.style.display = visible ? '' : 'none';
+    });
+  }
+
+  [buscar, fdesde, fhasta].forEach(el => el.addEventListener('input', applyFilter));
+})();
+</script>
+{% endblock %}

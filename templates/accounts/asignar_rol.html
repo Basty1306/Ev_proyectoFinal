@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% block title %}Asignar Rol{% endblock %}
+{% block content %}
+<style>
+body {
+  background-color: #0f172a;
+  font-family: 'Poppins', sans-serif;
+  color: #f3f4f6;
+}
+.main-container {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 2rem;
+  padding: 3rem;
+  flex-wrap: wrap;
+}
+.form-box {
+  flex: 0.6;
+  max-width: 420px;
+  min-width: 320px;
+  background-color: #1f2937;
+  padding: 1.8rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.form-box h2 {
+  text-align: center;
+  color: #a78bfa;
+  margin-bottom: 1rem;
+}
+label {
+  display: block;
+  margin-bottom: 1rem;
+  color: #d1d5db;
+  font-weight: 500;
+}
+input, select {
+  width: 100%;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: #111827;
+  color: #f3f4f6;
+  padding: 10px;
+  margin-bottom: 1rem;
+}
+button {
+  background-color: #a78bfa;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  width: 100%;
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover {
+  background-color: #8b5cf6;
+  color: #fff;
+}
+.rut-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rut-group input[type="text"]:first-child { flex: 3; }
+.rut-group input[type="text"]:last-child  { flex: 1; text-align: center; }
+
+.table-box {
+  flex: 1.6;
+  min-width: 540px;
+  background-color: #1f2937;
+  padding: 1.8rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.table-box h3 {
+  text-align: center;
+  color: #a78bfa;
+  margin-bottom: 1.5rem;
+}
+
+/* 🔹 Barra de búsqueda arriba */
+.search-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.search-input {
+  width: 80%;
+  max-width: 400px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #4c1d95;
+  background: #111827;
+  color: #f3f4f6;
+  text-align: center;
+  font-size: 0.95rem;
+}
+.search-input::placeholder {
+  color: #9ca3af;
+}
+.search-button {
+  background-color: #a78bfa;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #111827;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.search-button:hover {
+  background-color: #8b5cf6;
+  color: #fff;
+}
+
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+th, td { padding: 10px; border-bottom: 1px solid #374151; text-align: left; }
+th { color: #a78bfa; } td { color: #e5e7eb; }
+tbody tr:hover { background-color: rgba(167, 139, 250, 0.1); transition: 0.2s; }
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-action {
+  border: 1px solid #374151;
+  background: #111827;
+  color: #f3f4f6;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-action:hover {
+  background: #0b1220;
+  border-color: #4b5563;
+}
+
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 1.5rem;
+  color: #a78bfa;
+  text-decoration: none;
+}
+.back-link:hover { text-decoration: underline; }
+
+@media (max-width: 900px) {
+  .main-container { flex-direction: column; align-items: center; padding: 1rem; }
+  .form-box, .table-box { width: 90%; max-width: none; }
+  .table-box { min-width: 0; }
+}
+</style>
+
+<div class="main-container">
+  <div class="form-box">
+    <h2>Asignar Roles</h2>
+
+    <form method="post">
+      {% csrf_token %}
+      <label for="id_rut">RUT</label>
+      <div class="rut-group">
+        <input type="text" name="rut_num" id="id_rut" placeholder="Ej: 12345678" required inputmode="numeric" pattern="[0-9]{6,8}" maxlength="8"/>
+        <span style="color:#f3f4f6;">-</span>
+        <input type="text" name="digitoV" id="id_dv" placeholder="K" required maxlength="1" pattern="[0-9Kk]"/>
+      </div>
+
+      <label for="id_rol">Rol</label>
+      {{ form.rol }}
+
+      <label for="id_activo">Activo</label>
+      <select name="activo" id="id_activo" required>
+        <option value="True">Activo</option>
+        <option value="False">Inactivo</option>
+      </select>
+
+      <button type="submit">Asignar Rol</button>
+    </form>
+  </div>
+
+  <div class="table-box">
+    <h3>Usuarios Registrados</h3>
+
+<!-- 🔍 BLOQUE DE BÚSQUEDA CON BOTÓN SUPERIOR IZQUIERDO -->
+<div class="search-container" style="margin-bottom: 1.5rem; position: relative;">
+
+  <!-- 🔙 Mostrar Todos (solo aparece si hay búsqueda activa) -->
+  {% if busqueda %}
+  <div style="position: absolute; left: 0; top: 0;">
+    <a href="{% url 'asignar_rol' %}"
+       class="btn-action"
+       style="background-color:#a78bfa; border:none; color:#111827; font-weight:600;
+              padding:8px 14px; border-radius:8px; text-decoration:none;
+              box-shadow:0 2px 6px rgba(0,0,0,0.3); transition:0.3s;">
+       Mostrar Todos
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Formulario centrado -->
+  <form method="get" 
+        style="display: flex; justify-content: center; align-items: center; gap: 10px; width: 100%; flex-wrap: wrap;">
+    
+    <input 
+      type="text"
+      name="q"
+      value="{{ busqueda|default_if_none:'' }}"
+      class="search-input"
+      placeholder="Buscar por RUT, nombre o apellido..."
+      style="flex: 1; max-width: 420px; padding:10px 14px; border-radius:8px;
+             border:1px solid #4c1d95; background:#111827; color:#f3f4f6;
+             text-align:center; font-size:0.95rem; height:40px;"
+    >
+
+    <button type="submit"
+            class="search-button"
+            style="padding:8px 16px; height:40px; background-color:#a78bfa; border:none;
+                   border-radius:8px; color:#111827; font-weight:600; cursor:pointer; transition:0.3s;">
+      Buscar
+    </button>
+  </form>
+
+  <!-- Texto informativo -->
+  {% if busqueda %}
+  <p style="text-align:center; color:#9ca3af; font-size:0.9rem; margin-top:6px;">
+    Resultados filtrados por: <span style="color:#a78bfa; font-weight:600;">{{ busqueda }}</span>
+  </p>
+  {% endif %}
+</div>
+<!-- 🔍 FIN BLOQUE -->
+
+
+
+
+    <!-- Indicador de página -->
+    <div style="text-align: right; color: #a78bfa; font-weight: 500; margin-bottom: 0.5rem;">
+      Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>RUT</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in page_obj %}
+        <tr>
+          <td>{{ u.0 }}-{{ u.5 }}</td>
+          <td>{{ u.1 }}</td>
+          <td>{{ u.2 }}</td>
+          <td>{{ u.3|default:"Sin rol" }}</td>
+          <td>{{ u.4|default:"Inactivo" }}</td>
+          <td>
+            <div class="table-actions">
+              <a class="btn-action" href="{% url 'editar_perfil_admin' rut=u.0 dv=u.5 %}">Editar</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center; color:#9ca3af;">No se encontraron usuarios que coincidan con tu búsqueda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div style="text-align: center; margin-top: 1rem;">
+      {% if page_obj.has_previous %}
+        <a class="btn-action" href="?page={{ page_obj.previous_page_number }}{% if busqueda %}&q={{ busqueda }}{% endif %}">← Anterior</a>
+      {% endif %}
+
+      <span style="margin: 0 1rem;">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+      {% if page_obj.has_next %}
+        <a class="btn-action" href="?page={{ page_obj.next_page_number }}{% if busqueda %}&q={{ busqueda }}{% endif %}">Siguiente →</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<a href="{% url 'dashboard' %}" class="back-link">← Volver al Panel</a>
+{% endblock %}

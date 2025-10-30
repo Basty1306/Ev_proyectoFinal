@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Iniciar Sesión{% endblock %}
+
+{# Oculta navbar en login #}
+{% block navbar %}{% endblock %}
+
+{# Evita mensajes globales para no duplicar #}
+{% block messages %}{% endblock %}
+
+{% block content %}
+<style>
+  .form-container {
+    width: 420px; /* 💡 más ancho */
+    margin: 6% auto;
+    border-radius: 1rem;
+    background-color: #111827;
+    padding: 2.5rem 3rem; /* 💡 más espacio interior */
+    color: #f3f4f6;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+  }
+  
+  .title {
+    text-align: center;
+    font-size: 1.8rem;
+    line-height: 2.2rem;
+    font-weight: 700;
+    color: #a78bfa;
+  }
+  
+  .form {
+    margin-top: 2rem;
+  }
+  
+  .input-group {
+    margin-top: 1.2rem;
+    font-size: 1rem;
+    line-height: 1.3rem;
+  }
+  
+  .input-group label {
+    display: block;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  
+  .input-group input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid #374151;
+    outline: 0;
+    background-color: #0f172a;
+    padding: 0.9rem 1.1rem;
+    color: #f3f4f6;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  
+  .input-group input:focus {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.6);
+  }
+  
+  .sign {
+    display: block;
+    width: 100%;
+    background-color: #a78bfa;
+    padding: 0.85rem;
+    text-align: center;
+    color: #111827;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  
+  .sign:hover {
+    background-color: #8b5cf6;
+    color: white;
+  }
+  
+  .flash {
+    background-color: #a78bfa;
+    color: #111827;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    margin-top: 15px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  
+  @media (max-width: 480px) {
+    .form-container {
+      width: 90%;
+      padding: 1.8rem;
+    }
+  }
+  
+  footer {
+    background-color: #1f2937;
+    color: #9ca3af;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+    /* sin margin-top:auto aquí; el flex del body ya lo coloca al final */
+  }
+  </style>
+  
+
+<div class="form-container">
+  <p class="title">Login</p>
+
+  {# Mensajes SOLO aquí #}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form class="form" method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="input-group">
+      <label for="rut">RUT</label>
+      <input
+        type="text" name="rut" id="rut" placeholder="12345678-9" required
+        inputmode="numeric" autocomplete="username" maxlength="10"
+        pattern="[0-9]{6,8}-[0-9Kk]" title="Formato: 6 a 8 dígitos, guion y DV (0-9 o K)" autofocus>
+    </div>
+
+    <div class="input-group">
+      <label for="password">Contraseña</label>
+      <input type="password" name="contrasena" id="password" placeholder="********" required autocomplete="current-password">
+    </div>
+
+    <br>
+    <button class="sign" type="submit">Ingresar</button>
+  </form>
+</div>
+
+<script>
+  (function () {
+    const rut = document.getElementById('rut');
+    if (!rut) return;
+    rut.addEventListener('input', () => {
+      let v = rut.value.replace(/[^0-9Kk-]/g, '').toUpperCase();
+      const parts = v.split('-');
+      if (parts.length > 2) v = parts[0] + '-' + parts.slice(1).join('');
+      let [num = '', dv = ''] = v.split('-');
+      num = num.replace(/[^0-9]/g, '').slice(0, 8);
+      dv  = (dv || '').replace(/[^0-9K]/g, '').slice(0, 1);
+      if (v.includes('-')) rut.value = dv ? `${num}-${dv}` : `${num}-`;
+      else rut.value = num;
+    });
+  })();
+</script>
+{% endblock %}

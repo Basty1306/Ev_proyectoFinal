@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Redactar Acta - Modo Oscuro{% endblock %}
+{% block content %}
+<style>
+  /* ======== FONDO GENERAL ======== */
+  body {
+    background-color: #0b1120;
+    color: #f1f5f9;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 40px auto;
+    background: #111827;
+    border-radius: 14px;
+    box-shadow: 0 0 25px rgba(0,0,0,.4);
+    overflow: hidden;
+  }
+
+  /* ======== HEADER ======== */
+  .header {
+    background: linear-gradient(90deg,#1e293b,#0f172a);
+    color: #f1f5f9;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid #334155;
+  }
+
+  .header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ======== LAYOUT PRINCIPAL ======== */
+  .content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  /* ======== CARD INFO ======== */
+  .card-info {
+    flex: 1 1 300px;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid #334155;
+  }
+
+  .card-info p {
+    margin: 6px 0;
+    font-size: 0.95rem;
+  }
+
+  .card-info strong {
+    color: #38bdf8;
+    font-weight: 600;
+  }
+
+  /* ======== SCOREBOARD ======== */
+  .scoreboard {
+    flex: 2 1 550px;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border-radius: 14px;
+    color: #f9fafb;
+    padding: 26px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: inset 0 2px 8px rgba(255,255,255,.05);
+  }
+
+  .team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 35%;
+  }
+
+  .team img {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 10px; /* cuadradas pero con esquinas suaves */
+    border: 2px solid #334155;
+    background: #0b1120;
+    box-shadow: 0 0 8px rgba(0,0,0,.4);
+  }
+
+  .team-name {
+    font-weight: 600;
+    color: #e2e8f0;
+    margin: 10px 0;
+    text-align: center;
+  }
+
+  .score-input {
+    width: 90px;
+    height: 80px;
+    font-size: 2.8rem;
+    font-weight: 700;
+    text-align: center;
+    border: none;
+    border-radius: 10px;
+    background: #e2e8f0;
+    color: #000;
+    outline: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,.5);
+  }
+
+  .score-input:focus {
+    outline: 2px solid #a78bfa;
+  }
+
+  .vs {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #64748b;
+  }
+
+  /* ======== FORMULARIO ======== */
+  .form-section {
+    padding: 0 24px 24px 24px;
+  }
+
+  form label {
+    font-weight: 600;
+    display: block;
+    margin-top: 14px;
+    color: #e2e8f0;
+  }
+
+  form textarea,
+  form input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: .95rem;
+    background: #1e293b;
+    color: #f1f5f9;
+    transition: all .2s ease;
+  }
+
+  form textarea:focus,
+  form input:focus {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 2px rgba(167,139,250,.2);
+    outline: none;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+  }
+
+  .form-row > div {
+    flex: 1;
+  }
+
+  /* ======== BOTONES ======== */
+  .btn-group {
+    margin-top: 24px;
+  }
+
+  .btn-submit {
+    background: #a78bfa;
+    color: #111827;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all .2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,.2);
+  }
+
+  .btn-submit:hover {
+    background: #8b5cf6;
+    color: #fff;
+  }
+
+  .btn-back {
+    margin-left: 10px;
+    background: #334155;
+    color: #f1f5f9;
+    padding: 10px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all .2s ease;
+  }
+
+  .btn-back:hover {
+    background: #475569;
+  }
+</style>
+
+<div class="wrap">
+  <div class="header">
+    <h1>⚽ Redactar Acta del Partido</h1>
+  </div>
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="content">
+      <div class="card-info">
+        <p><strong>Fecha:</strong> {{ partido.fecha|date:"d/m/Y" }}</p>
+        <p><strong>Hora:</strong> {{ partido.hora|default:"—" }}</p>
+        <p><strong>Cancha:</strong> {{ partido.cancha }}</p>
+        <p><strong>Estado:</strong> {{ partido.estado }}</p>
+      </div>
+
+      <div class="scoreboard">
+        <div class="team">
+          <img src="{% static 'img/equipos/' %}{{ partido.local|slugify }}.png" alt="{{ partido.local }}">
+          <div class="team-name">{{ partido.local }}</div>
+          <input type="number" name="goles_local" class="score-input" min="0" max="20" required>
+        </div>
+
+        <div class="vs">-</div>
+
+        <div class="team">
+          <img src="{% static 'img/equipos/' %}{{ partido.visita|slugify }}.png" alt="{{ partido.visita }}">
+          <div class="team-name">{{ partido.visita }}</div>
+          <input type="number" name="goles_visita" class="score-input" min="0" max="20" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <label for="incidentes">Incidentes o Sanciones</label>
+      <textarea id="incidentes" name="incidentes" placeholder="Describe los incidentes ocurridos (si hubo expulsiones, retrasos, etc.)"></textarea>
+
+      <div class="form-row">
+        <div>
+          <label for="tarjetas_amarillas">Tarjetas Amarillas</label>
+          <input type="number" id="tarjetas_amarillas" name="tarjetas_amarillas" min="0" placeholder="Ej: 3">
+        </div>
+        <div>
+          <label for="tarjetas_rojas">Tarjetas Rojas</label>
+          <input type="number" id="tarjetas_rojas" name="tarjetas_rojas" min="0" placeholder="Ej: 1">
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button type="submit" class="btn-submit">💾 Enviar Acta</button>
+        <a href="{% url 'partidos_asignados' %}" class="btn-back">← Volver</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

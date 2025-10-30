@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Detalle del Acta{% endblock %}
+
+{% block content %}
+<style>
+  body{background:#0f172a;color:#f3f4f6;font-family:'Poppins',sans-serif;}
+  .wrap{max-width:800px;margin:40px auto;padding:20px;}
+  .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:24px;}
+  h1{color:#a78bfa;font-size:1.5rem;margin-bottom:20px;}
+  .row{display:flex;justify-content:space-between;margin-bottom:12px;}
+  .label{color:#94a3b8;font-weight:500;}
+  .valor{color:#f9fafb;}
+  .badge{padding:4px 8px;border-radius:8px;font-size:.8rem;font-weight:600;}
+  .badge.pendiente{background:#facc15;color:#111827;}
+  .badge.revision{background:#38bdf8;color:#111827;}
+  .badge.aprobada{background:#22c55e;color:#fff;}
+  .badge.rechazada{background:#ef4444;color:#fff;}
+  .btn{background:#a78bfa;color:#111827;padding:8px 14px;border:none;border-radius:8px;font-weight:600;cursor:pointer;text-decoration:none;}
+  .btn:hover{background:#8b5cf6;color:#fff;}
+</style>
+
+<div class="wrap">
+  <div class="card">
+    <h1>🧾 Acta del Partido</h1>
+
+    <div class="row"><span class="label">ID Acta:</span><span class="valor">{{ acta.0 }}</span></div>
+    <div class="row"><span class="label">Fecha:</span><span class="valor">{{ acta.3|date:"d/m/Y" }}</span></div>
+    <div class="row"><span class="label">Hora:</span><span class="valor">{{ acta.4 }}</span></div>
+    <div class="row"><span class="label">Cancha:</span><span class="valor">{{ acta.5 }}</span></div>
+
+    <hr style="border-color:#1f2937;margin:16px 0;">
+
+    <div class="row"><span class="label">Club Local:</span><span class="valor">{{ acta.1 }}</span></div>
+    <div class="row"><span class="label">Club Visitante:</span><span class="valor">{{ acta.2 }}</span></div>
+    <div class="row"><span class="label">Resultado:</span><span class="valor">{{ acta.6 }} - {{ acta.7 }}</span></div>
+
+    <hr style="border-color:#1f2937;margin:16px 0;">
+
+    <div>
+      <span class="label">Incidentes:</span>
+      <p class="valor" style="margin-top:6px;">{{ acta.8|linebreaksbr }}</p>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <span class="label">Estado actual:</span>
+      <span class="badge 
+        {% if acta.9 == 'Pendiente' %}pendiente
+        {% elif acta.9 == 'En revisión' %}revision
+        {% elif acta.9 == 'Aprobada' %}aprobada
+        {% elif acta.9 == 'Rechazada' %}rechazada
+        {% endif %}">
+        {{ acta.9 }}
+      </span>
+    </div>
+
+    {% if acta.10 %}
+    <div style="margin-top:10px;">
+      <span class="label">Observación del Tribunal:</span>
+      <p class="valor" style="margin-top:6px;">{{ acta.10 }}</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:20px;text-align:center;">
+      <a href="{% url 'actas_arbitro' %}" class="btn">← Volver al Historial</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

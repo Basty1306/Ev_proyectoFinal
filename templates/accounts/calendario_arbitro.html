@@ -1,0 +1,331 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Calendario de Disponibilidad</title>
+
+  <!-- == TU ESTILO == -->
+  <style>
+  body {
+    background-color: #0f172a;
+    font-family: 'Poppins', sans-serif;
+    color: #f3f4f6;
+  }
+  /* === CONTENEDOR PRINCIPAL === */
+  .main-container {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 2rem;
+    padding: 3rem;
+    flex-wrap: wrap;
+  }
+  /* === FORMULARIO === */
+  .form-box {
+    flex: 0.6;
+    max-width: 420px;
+    min-width: 320px;
+    background-color: #1f2937;
+    padding: 1.8rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .form-box h2 {
+    text-align: center;
+    color: #a78bfa;
+    margin-bottom: 1rem;
+  }
+  label {
+    display: block;
+    margin-bottom: 1rem;
+    color: #d1d5db;
+    font-weight: 500;
+  }
+  input, select {
+    width: 100%;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    background: #111827;
+    color: #f3f4f6;
+    padding: 10px;
+    margin-bottom: 1rem;
+  }
+  button {
+    background-color: #a78bfa;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    width: 100%;
+    color: #111827;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover {
+    background-color: #8b5cf6;
+    color: #fff;
+  }
+  /* RUT + DV juntos */
+  .rut-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rut-group input[type="text"]:first-child { flex: 3; }
+  .rut-group input[type="text"]:last-child  { flex: 1; text-align: center; }
+
+  /* === TABLA / PANEL === */
+  .table-box {
+    flex: 1.6;
+    min-width: 540px;
+    background-color: #1f2937;
+    padding: 1.8rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .table-box h3 {
+    text-align: center;
+    color: #a78bfa;
+    margin-bottom: 1rem;
+  }
+  .table-wrapper { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { padding: 10px; border-bottom: 1px solid #374151; text-align: left; }
+  th { color: #a78bfa; } td { color: #e5e7eb; }
+  tbody tr:hover { background-color: rgba(167, 139, 250, 0.1); transition: 0.2s; }
+  th.sortable { cursor: pointer; white-space: nowrap; user-select: none; }
+  th.sortable .arrow { font-size: 0.85rem; margin-left: 6px; opacity: 0.6; }
+  th.sortable.sorted-asc  .arrow::after { content: "▲"; opacity: 1; }
+  th.sortable.sorted-desc .arrow::after { content: "▼"; opacity: 1; }
+
+  .table-actions { display: flex; gap: 8px; }
+  .btn-action {
+    border: 1px solid #374151;
+    background: #111827;
+    color: #f3f4f6;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .btn-action:hover { background: #0b1220; border-color: #4b5563; }
+
+  .row-usuario { cursor: pointer; }
+  .row-usuario.selected { background-color: rgba(167,139,250,0.18); }
+
+  .back-link { display: block; text-align: center; margin-top: 1.5rem; color: #a78bfa; text-decoration: none; }
+  .back-link:hover { text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    .main-container { flex-direction: column; align-items: center; padding: 1rem; }
+    .form-box, .table-box { width: 90%; max-width: none; }
+    .table-box { min-width: 0; }
+  }
+
+  /* === PEQUEÑO EXTRA para calendario semanal en tu misma línea visual === */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+  }
+  .day-card {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+  }
+  .day-title { font-weight: 600; color: #a78bfa; margin-bottom: 6px; }
+  .day-sub { font-size: .85rem; color: #9ca3af; margin-bottom: 10px; }
+  .slot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(167,139,250,0.12);
+    border: 1px solid rgba(167,139,250,0.28);
+    color: #e9d5ff;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  .slot strong { color: #f3f4f6; }
+  .slot small { color: #9ca3af; }
+  .slot form button {
+    width: auto;
+    background: #111827;
+    border: 1px solid #4b5563;
+    color: #e5e7eb;
+    padding: 6px 10px;
+  }
+  .slot form button:hover {
+    background: #0b1220;
+    border-color: #6b7280;
+    color: #fff;
+  }
+  .day-empty { color: #9ca3af; text-align: center; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="main-container">
+
+  <!-- =================== FORMULARIO AGREGAR =================== -->
+  <section class="form-box">
+    <div>
+      <h2>Disponibilidad semanal</h2>
+
+      {% if messages %}
+        <div style="margin-bottom: .75rem;">
+          {% for message in messages %}
+            <div class="btn-action" style="display:block; text-align:center; border-color:#6b7280; margin-bottom:.5rem;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" id="form-agregar">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="agregar" />
+
+        <label>
+          Día de la semana
+          <select name="dia_semana" required>
+            {% for idx, nombre in dias_select %}
+              <option value="{{ idx }}">{{ nombre }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <div style="display:flex; gap:12px;">
+          <label style="flex:1;">
+            Inicio
+            <input type="time" name="franja_inicio" required />
+          </label>
+          <label style="flex:1;">
+            Término
+            <input type="time" name="franja_fin" required />
+          </label>
+        </div>
+
+        <button type="submit">Agregar disponibilidad</button>
+      </form>
+    </div>
+
+    <a class="back-link" href="{% url 'partidos_asignados' %}">Ver partidos asignados →</a>
+  </section>
+
+  <!-- =================== CALENDARIO / LADO DERECHO =================== -->
+  <section class="table-box">
+    <h3>Calendario (Domingo a Sábado)</h3>
+
+    <div class="table-wrapper">
+      <div class="week-grid">
+
+        {% comment %}
+          Pintamos 7 columnas. Para cada día (idx), buscamos y listamos las franjas de 'disponibilidad'
+          que coincidan con ese índice. Cada franja trae su botón para eliminar.
+        {% endcomment %}
+        {% for idx, nombre in dias_select %}
+          <div class="day-card">
+            <div class="day-title">{{ nombre }}</div>
+            <div class="day-sub">Franja(s) disponibles</div>
+
+            {% with hay=0 %}
+              {% for d in disponibilidad %}
+                {% if d.dia_idx == idx %}
+                  {% if d.activo %}{% with hay=1 %}{% endwith %}{% endif %}
+                  <div class="slot">
+                    <div>
+                      <strong>{{ d.inicio }} – {{ d.fin }}</strong><br>
+                      <small>#{{ d.id }}</small>
+                    </div>
+                    <form method="post" onsubmit="return confirmarEliminar('{{ d.inicio }}','{{ d.fin }}','{{ nombre }}')">
+                      {% csrf_token %}
+                      <input type="hidden" name="accion" value="eliminar" />
+                      <input type="hidden" name="disp_id" value="{{ d.id }}" />
+                      <button type="submit">Eliminar</button>
+                    </form>
+                  </div>
+                {% endif %}
+              {% endfor %}
+
+              {% if hay == 0 %}
+                <div class="day-empty">Sin franjas registradas</div>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% endfor %}
+
+      </div>
+    </div>
+
+    <!-- Panel con partidos simples en tabla (opcional) -->
+    <div style="margin-top: 1.5rem;">
+      <h3>Partidos próximos</h3>
+      {% if partidos and partidos|length > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable">Fecha</th>
+              <th class="sortable">Hora</th>
+              <th>Local</th>
+              <th>Visita</th>
+              <th>Cancha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in partidos %}
+              <tr>
+                <td>{{ p.1 }}</td>
+                <td>{% if p.2 %}{{ p.2 }}{% endif %}</td>
+                <td>{{ p.3 }}</td>
+                <td>{{ p.4 }}</td>
+                <td>{{ p.5 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="day-empty">No tienes partidos asignados por ahora.</div>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Validación simple del formulario (HH:MM y start < end)
+  document.getElementById('form-agregar').addEventListener('submit', function (e) {
+    const ini = this.elements['franja_inicio'].value;
+    const fin = this.elements['franja_fin'].value;
+    if (!ini || !fin) {
+      e.preventDefault();
+      alert('Debes ingresar hora de inicio y término.');
+      return false;
+    }
+    if (ini >= fin) {
+      e.preventDefault();
+      alert('La hora de inicio debe ser menor que la de término.');
+      return false;
+    }
+    return true;
+  });
+
+  function confirmarEliminar(ini, fin, dia) {
+    return confirm(`¿Eliminar la franja ${ini}–${fin} del día ${dia}?`);
+  }
+</script>
+
+</body>
+</html>

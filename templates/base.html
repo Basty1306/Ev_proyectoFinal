@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Panel ANFA{% endblock %}</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { background-color:#0f172a; color:#f3f4f6; font-family:'Poppins',sans-serif; margin:0; padding:0; }
+    header { background:#1f2937; color:#a78bfa; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,.4); }
+    header h1 { font-size:1.3rem; margin:0; display:flex; align-items:center; gap:10px; }
+    header h1 span.emoji { font-size:1.5rem; }
+    nav a { color:#f3f4f6; text-decoration:none; margin:0 12px; font-weight:500; transition:color .2s; }
+    nav a:hover { color:#a78bfa; }
+    main { padding:2rem; min-height:80vh; }
+    footer { background:#1f2937; color:#9ca3af; text-align:center; padding:1rem; font-size:.9rem; margin-top:auto; }
+    .messages { text-align:center; margin-top:1rem; }
+    .messages p { display:inline-block; padding:10px 16px; border-radius:8px; margin:5px; font-weight:500; }
+    .messages .success { background:#22c55e; color:#111827; }
+    .messages .error { background:#ef4444; color:#fff; }
+    .messages .info { background:#a78bfa; color:#111827; }
+    .btn { background:#a78bfa; border:none; border-radius:8px; padding:10px 16px; color:#111827; font-weight:600; cursor:pointer; transition:.3s; }
+    .btn:hover { background:#8b5cf6; color:#fff; }
+  </style>
+</head>
+
+<body>
+  <!-- === NAVBAR (bloque sobreescribible) === -->
+  {% block navbar %}
+  <header>
+    {% if request.session.user_is_arbitro %}
+      <h1><span class="emoji">⚽</span> ANFA - Panel Árbitro</h1>
+      <nav>
+        <a href="{% url 'perfil_arbitro' %}">👨‍⚖️ Mi Perfil</a>
+        <a href="{% url 'calendario_arbitro' %}">📅 Disponibilidad</a>
+        <a href="{% url 'partidos_asignados' %}">🏆 Mis Partidos</a>
+        <a href="{% url 'logout' %}">🚪 Cerrar Sesión</a>
+      </nav>
+    {% else %}
+      <h1><span class="emoji">⚽</span> ANFA - Sistema de Gestión</h1>
+      <nav>
+        {% if request.session.user_rut %}
+          <a href="{% url 'dashboard' %}">🏠 Dashboard</a>
+          <a href="{% url 'registrar_usuario' %}">👤 Usuarios</a>
+          <a href="{% url 'asignar_rol' %}">🧩 Roles</a>
+          <a href="{% url 'editar_cargo_arbitral' %}">⚖️ Cargos</a>
+          <a href="{% url 'asignar_partidos' %}">📋 Asignar Partidos</a>
+          <a href="{% url 'logout' %}">🚪 Cerrar Sesión</a>
+        {% else %}
+          <a href="{% url 'login' %}">🔐 Iniciar Sesión</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </header>
+  {% endblock navbar %}
+
+  <!-- === MENSAJES (bloque sobreescribible) === -->
+  {% block messages %}
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <p class="{{ message.tags }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% endblock messages %}
+
+  <!-- Contenido -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>© {{ now|date:"Y" }} ANFA Concepción — Sistema desarrollado por Fútbol del Pueblo ⚙️</p>
+  </footer>
+</body>
+</html>

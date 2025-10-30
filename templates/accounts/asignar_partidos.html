@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Asignar Partidos{% endblock %}
+{% block content %}
+<style>
+  .wrap { max-width:1600px; margin:40px auto; padding:0 16px; }
+
+  h2 { color:#a78bfa; text-align:center; margin-bottom:14px; }
+
+  .msg { text-align:center; margin:8px 0; }
+  .msg.ok  { color:#34d399; }
+  .msg.err { color:#f87171; }
+
+  .tablebox { background:#1f2937; border-radius:12px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,.3); }
+
+  /* Tabla */
+  table.table-assign { width:100%; border-collapse:collapse; }
+  .table-assign th, .table-assign td { padding:12px 14px; border-bottom:1px solid #374151; text-align:left; vertical-align:middle; }
+  .table-assign th { color:#a78bfa; font-weight:700; }
+
+  /* Anchos de columnas para estabilidad */
+  .col-id{ width:72px; }
+  .col-fecha{ width:130px; }
+  .col-hora{ width:90px; }
+  .col-asig{ width:280px; }
+  .col-act{ min-width:440px; }
+
+  /* Chip de asignación */
+  .asig-chip{
+    display:inline-flex; align-items:center; gap:.5rem;
+    background:#0b1220; border:1px solid #374151; border-radius:999px;
+    padding:6px 10px; line-height:1; max-width:100%;
+  }
+  .asig-chip .badge{
+    background:#a78bfa; color:#111827; font-weight:800; border-radius:999px; padding:2px 8px; font-size:.85rem;
+  }
+  .asig-chip .text{
+    max-width:210px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* Acciones */
+  .row-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .row-actions input[type="text"]{
+    height:38px; background:#111827; border:1px solid #374151; border-radius:8px; color:#f3f4f6; padding:0 .8rem; box-sizing:border-box;
+  }
+  .row-actions input[type="text"]:focus{ outline:none; border-color:#8b5cf6; box-shadow:0 0 0 1px rgba(139,92,246,.35); }
+  .rut-input{ width:180px; }     /* 💡 más ancho */
+  .dv-input{ width:68px; text-align:center; text-transform:uppercase; }
+
+  .btn{ background:#a78bfa; color:#111827; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .btn:hover{ background:#8b5cf6; color:#fff; }
+  .btn-ghost{ background:#111827; border:1px solid #a78bfa; color:#a78bfa; }
+  .btn-ghost:hover{ background:#0c1220; border-color:#8b5cf6; color:#fff; }
+
+  /* Responsive */
+  @media (max-width:960px){
+    .col-asig{ width:220px; }
+    .col-act{ min-width:360px; }
+    .rut-input{ width:160px; }
+  }
+  @media (max-width:720px){
+    .rut-input{ width:140px; }
+    .dv-input{ width:60px; }
+    .asig-chip .text{ max-width:160px; }
+  }
+</style>
+
+<div class="wrap">
+  <h2>Asignar Árbitros a Partidos</h2>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg {% if message.tags == 'success' %}ok{% else %}err{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="tablebox">
+    <table class="table-assign">
+      <thead>
+        <tr>
+          <th class="col-id">ID</th>
+          <th class="col-fecha">Fecha</th>
+          <th class="col-hora">Hora</th>
+          <th>Partido</th>
+          <th class="col-asig">Asignación</th>
+          <th class="col-act">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in partidos %}
+        <tr>
+          <td class="col-id">{{ p.0 }}</td>
+          <td class="col-fecha">{{ p.1|date:"Y-m-d" }}</td>
+          <td class="col-hora">{{ p.2|default:"—" }}</td>
+          <td>{{ p.3 }} vs {{ p.4 }}</td>
+
+          <td class="col-asig">
+            {% if p.5 and p.6 %}
+              <span class="asig-chip">
+                <span class="badge">Árbitro</span>
+                <span class="text">{{ p.5 }}-{{ p.6 }}</span>
+              </span>
+            {% else %}
+              <span class="asig-chip"><span class="text">Sin árbitro</span></span>
+            {% endif %}
+          </td>
+
+          <td class="col-act">
+            <form method="post" class="row-actions">
+              {% csrf_token %}
+              <input type="hidden" name="id_partido" value="{{ p.0 }}">
+
+              <input type="text" name="rut_arbitro" class="rut-input"
+                     placeholder="RUT (sin DV)" inputmode="numeric"
+                     pattern="[0-9]{6,8}" title="Sólo números (6 a 8 dígitos)">
+
+              <input type="text" name="dv_arbitro" class="dv-input"
+                     placeholder="DV" maxlength="1" pattern="[0-9Kk]" title="0-9 o K">
+
+              <button type="submit" class="btn">Asignar</button>
+
+              {% if p.5 and p.6 %}
+                <button type="submit" name="unassign" value="1" class="btn btn-ghost">Quitar</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No hay partidos para mostrar.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem;">
+    <a href="{% url 'dashboard' %}" style="color:#a78bfa;">← Volver al Panel</a>
+  </div>
+</div>
+
+<script>
+  // Normaliza DV a mayúscula y restringe a 1 char, y RUT solo números
+  document.addEventListener('input', (e) => {
+    if (e.target.name === 'rut_arbitro') {
+      e.target.value = (e.target.value || '').replace(/\D/g,'').slice(0,8);
+    }
+    if (e.target.name === 'dv_arbitro') {
+      e.target.value = (e.target.value || '').replace(/[^0-9Kk]/g,'').toUpperCase().slice(0,1);
+    }
+  });
+</script>
+{% endblock %}

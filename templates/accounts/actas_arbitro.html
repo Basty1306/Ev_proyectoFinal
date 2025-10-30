@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Mis Actas{% endblock %}
+
+{% block content %}
+<style>
+  body{background:#0f172a;color:#f3f4f6;font-family:'Poppins',sans-serif;}
+  .wrap{max-width:1100px;margin:40px auto;padding:0 16px;}
+  .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px 24px;}
+  .card h1{margin-bottom:10px;color:#a78bfa;font-size:1.6rem;display:flex;align-items:center;gap:8px;}
+  table{width:100%;border-collapse:collapse;margin-top:12px;}
+  th,td{padding:10px;border-bottom:1px solid #1e293b;text-align:left;}
+  th{color:#a78bfa;text-transform:uppercase;font-size:.9rem;}
+  td{color:#e2e8f0;font-size:.95rem;}
+  .badge{padding:4px 8px;border-radius:8px;font-size:.8rem;font-weight:600;}
+  .badge.pendiente{background:#facc15;color:#111827;}
+  .badge.revision{background:#38bdf8;color:#111827;}
+  .badge.aprobada{background:#22c55e;color:#fff;}
+  .badge.rechazada{background:#ef4444;color:#fff;}
+  .btn{background:#a78bfa;color:#111827;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;}
+  .btn:hover{background:#8b5cf6;color:#fff;}
+  .center{text-align:center;}
+</style>
+
+<div class="wrap">
+  <div class="card">
+    <h1>🧾 Mis Actas</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>ID Acta</th>
+          <th>Fecha Encuentro</th>
+          <th>Club Local</th>
+          <th>Club Visitante</th>
+          <th>Resultado</th>
+          <th>Incidentes</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in actas %}
+        <tr>
+          <td>{{ a.0 }}</td>
+          <td>{{ a.3|date:"d \\d\\e F \\d\\e Y" }}</td>
+          <td>{{ a.1 }}</td>
+          <td>{{ a.2 }}</td>
+          <td>{{ a.4 }} - {{ a.5 }}</td>
+          <td>{{ a.6 }}</td>
+          <td>
+            <span class="badge
+              {% if a.7 == 'Pendiente' %}pendiente
+              {% elif a.7 == 'En revisión' %}revision
+              {% elif a.7 == 'Aprobada' %}aprobada
+              {% elif a.7 == 'Rechazada' %}rechazada
+              {% endif %}">
+              {{ a.7 }}
+            </span>
+          </td>
+          <td>
+            <a href="?ver={{ a.0 }}" class="btn">Ver acta</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="center" style="color:#94a3b8;">No hay actas registradas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="center" style="margin-top:20px;">
+      <a href="{% url 'partidos_asignados' %}" class="btn">← Volver al Panel</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function verActa(id) {
+    window.location.href = `/tribunal/acta/${id}/descargar/`;
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Editar Perfil{% endblock %}
+{% block content %}
+<style>
+  .container { max-width:900px; margin:40px auto; padding:0 20px; }
+  .card { background:#1f2937; color:#f3f4f6; padding:1.5rem; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,.2); }
+  h1 { color:#a78bfa; margin:0 0 1rem; text-align:center; }
+  label { display:block; margin:.6rem 0 .25rem; color:#d1d5db; font-weight:500; }
+  input, select { width:100%; border:1px solid #374151; border-radius:8px; background:#111827; color:#f3f4f6; padding:10px; margin-bottom:.8rem; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .actions { display:flex; gap:10px; margin-top:8px; }
+  .btn-primary { background:#a78bfa; border:none; border-radius:8px; padding:10px 16px; color:#111827; font-weight:600; cursor:pointer; }
+  .btn-primary:hover { background:#8b5cf6; color:#fff; }
+  .btn-ghost { background:none; border:1px solid #a78bfa; border-radius:8px; padding:10px 16px; color:#a78bfa; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+  @media (max-width:768px){ .grid{ grid-template-columns:1fr; } }
+  .help { font-size:.85rem; color:#c4b5fd; margin-top:-.5rem; margin-bottom:.8rem; }
+</style>
+
+<div class="container">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert {% if 'success' in message.tags %}ok{% else %}err{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card">
+    <h1>Editar Información de Contacto</h1>
+
+    <form method="post" action="{% url 'editar_perfil' %}" novalidate>
+      {% csrf_token %}
+
+      <!-- Solo lectura -->
+      <div class="grid">
+        <div>
+          <label>RUT</label>
+          <input type="text" value="{{ usuario.rut }}" readonly>
+        </div>
+        <div>
+          <label>Cargo</label>
+          <input type="text" value="{{ usuario.cargo }}" readonly>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Nombre</label>
+          <input type="text" value="{{ usuario.nombre }}" readonly>
+        </div>
+        <div>
+          <label>Apellido Paterno</label>
+          <input type="text" value="{{ usuario.apellidoP }}" readonly>
+        </div>
+        <div>
+          <label>Apellido Materno</label>
+          <input type="text" value="{{ usuario.apellidoM }}" readonly>
+        </div>
+      </div>
+
+      <hr style="border-color:#374151; margin:1rem 0;">
+
+      <!-- Editables -->
+      <div class="grid">
+        <div>
+          <label>Correo (Gmail)</label>
+          <input type="email" name="correo" value="{{ usuario.correo }}" required pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$" title="Debe ser una cuenta @gmail.com">
+          <div class="help">Debe terminar en <b>@gmail.com</b></div>
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input type="text" name="telefono" value="{{ usuario.telefono|default:'' }}" placeholder="+56 9 1234 5678" pattern="^[0-9 +()\-]{6,}$" title="Sólo números, espacios y signos + ( ) -">
+        </div>
+        <div>
+          <label>Dirección</label>
+          <input type="text" name="direccion" value="{{ usuario.direccion|default:'' }}" placeholder="Ej: Av. Las Torres 1234">
+        </div>
+        <div>
+          {% if comunas %}
+            <label>Comuna</label>
+            <select name="id_comuna">
+              <option value="">— Seleccione —</option>
+              {% for c in comunas %}
+                <option value="{{ c.0 }}" {% if usuario.id_comuna and c.0 == usuario.id_comuna %}selected{% endif %}>{{ c.1 }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <label>Comuna</label>
+            <input type="text" value="{{ usuario.comuna_nombre|default:'—' }}" disabled>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">Guardar Cambios</button>
+        <a href="{% url 'perfil_arbitro' %}" class="btn-ghost">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
