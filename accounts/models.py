@@ -163,15 +163,15 @@ class JugadorPartido(models.Model):
 
 
 class Jugadores(models.Model):
-    id_jugador = models.AutoField(primary_key=True)
+    rut_jugador = models.IntegerField(primary_key=True)
+    digitov = models.CharField(max_length=1)
     nombre = models.CharField(max_length=30, blank=True, null=True)
     apellido = models.CharField(max_length=30, blank=True, null=True)
-    rut_jugador = models.IntegerField(unique=True, blank=True, null=True)
     fecha_nacimiento = models.DateField(blank=True, null=True)
     estado = models.CharField(max_length=30, blank=True, null=True)
     num_camiseta = models.IntegerField(blank=True, null=True)
     id_serie = models.ForeignKey('Serie', models.DO_NOTHING, db_column='id_serie', blank=True, null=True)
-    id_club = models.ForeignKey(Club, models.DO_NOTHING, db_column='id_club', blank=True, null=True)
+    id_club = models.ForeignKey('Club', models.DO_NOTHING, db_column='id_club', blank=True, null=True)
 
     class Meta:
         managed = False

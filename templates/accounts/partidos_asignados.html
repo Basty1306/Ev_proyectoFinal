@@ -147,7 +147,7 @@
             <th>Fecha</th>
             <th>Partido</th>
             <th>Estado</th>
-           <!--  <th>Acción</th> -->
+            <!-- <th>Acción</th> -->      
           </tr>
         </thead>
         <tbody>
@@ -157,10 +157,9 @@
             <td>{{ p.fecha|date:"d/m/Y" }}</td>
             <td>{{ p.local }} vs {{ p.visita }}</td>
             <td><span class="pill finalizado">Enviada</span></td>
-            <!-- <td>
+       <!-- <td>
               <a href="{% url 'actas_arbitro' %}?ver={{ p.id }}" class="btn-acta" style="background:#60a5fa; color:#fff;">👁️ Ver Acta</a>
-            </td>
-            -->
+            </td> -->      
           </tr>
           {% endif %}
           {% empty %}

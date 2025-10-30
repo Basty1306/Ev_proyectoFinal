@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Verificación Turno{% endblock %}
+{% block content %}
+<h3>Partido {{ partido.0 }} – {{ serie_nombre }}</h3>
+<p>
+  <strong>Fecha:</strong> {{ partido.1 }}
+  &nbsp; <strong>Hora:</strong> {% if partido.2 %}{{ partido.2|date:"H:i" }}{% else %}—{% endif %}
+  &nbsp; <strong>Local:</strong> {{ partido.3 }}
+  &nbsp; <strong>Visita:</strong> {{ partido.4 }}
+  &nbsp; <strong>Cancha:</strong> {{ partido.5 }}
+</p>
+
+<hr>
+
+<h4>Agregar jugador</h4>
+<form method="post" class="mb-3">
+  {% csrf_token %}
+  <input type="hidden" name="accion" value="agregar">
+  {{ form_agregar.id_partido }} {{ form_agregar.id_serie }}
+  <div class="row g-2">
+    <div class="col-md-5">{{ form_agregar.rut.label_tag }} {{ form_agregar.rut }}</div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button class="btn btn-success">Agregar</button>
+    </div>
+  </div>
+  {% if form_agregar.errors %}
+    <div class="alert alert-danger mt-2">
+      {{ form_agregar.errors }}
+    </div>
+  {% endif %}
+</form>
+
+<div class="row">
+  <div class="col-md-6">
+    <h5>Local</h5>
+    <table class="table table-sm table-dark">
+      <thead><tr><th>#</th><th>RUT</th><th>Nombre</th><th></th></tr></thead>
+      <tbody>
+        {% for r in lista_local %}
+          <tr>
+            <td>{{ r.3 }}</td>  {# num_camiseta #}
+            <td>{{ r.0 }}</td>  {# rut_jugador #}
+            <td>{{ r.1 }} {{ r.2 }}</td>
+            <td>
+              <form method="post" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="remover">
+                <input type="hidden" name="rut_jugador" value="{{ r.0 }}">
+                <button class="btn btn-sm btn-outline-danger">Quitar</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4"><em>Sin jugadores</em></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-md-6">
+    <h5>Visita</h5>
+    <table class="table table-sm table-dark">
+      <thead><tr><th>#</th><th>RUT</th><th>Nombre</th><th></th></tr></thead>
+      <tbody>
+        {% for r in lista_visita %}
+          <tr>
+            <td>{{ r.3 }}</td>
+            <td>{{ r.0 }}</td>
+            <td>{{ r.1 }} {{ r.2 }}</td>
+            <td>
+              <form method="post" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="remover">
+                <input type="hidden" name="rut_jugador" value="{{ r.0 }}">
+                <button class="btn btn-sm btn-outline-danger">Quitar</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4"><em>Sin jugadores</em></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
