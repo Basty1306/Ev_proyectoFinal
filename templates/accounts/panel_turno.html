@@ -1,244 +1,215 @@
 {% extends 'base.html' %}
-{% block title %}Rol del Turno{% endblock %}
-
-{# Navbar reducido: solo "Cerrar Sesión" #}
-{% block navbar %}
-  <header style="background-color:#1f2937; color:#a78bfa; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.4);">
-    <h1 style="font-size:1.3rem; margin:0; display:flex; align-items:center; gap:10px;">
-      🧾 ANFA - Rol del Turno
-    </h1>
-    <nav>
-      <a href="{% url 'logout' %}" style="color:#f3f4f6; text-decoration:none; margin-left:12px; font-weight:500; transition:color .2s;">🚪 Cerrar Sesión</a>
-    </nav>
-  </header>
-{% endblock %}
-
+{% block title %}Panel del Turno{% endblock %}
 {% block content %}
 <style>
-  body{background:#0f172a;color:#f3f4f6;font-family:'Poppins',sans-serif;}
-  .wrap{max-width:1200px;margin:36px auto;padding:0 16px;}
-  .hero{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:20px 24px;margin-bottom:20px}
-  .hero h1{margin:0 0 6px;font-size:1.4rem;color:#a78bfa}
-  .muted{color:#94a3b8;font-size:.9rem}
-  .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-  @media (max-width:1100px){.grid{grid-template-columns:1fr}}
-  .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px}
-  .card h2{margin:0 0 12px;font-size:1.1rem;color:#a78bfa}
-  label{display:block;margin:.25rem 0;color:#d1d5db}
-  input,select,textarea{width:100%;background:#0b1220;border:1px solid #263042;border-radius:8px;color:#e5e7eb;padding:10px;margin-bottom:10px}
-  textarea{min-height:100px;resize:vertical}
-  .btn{background:#a78bfa;border:none;border-radius:8px;color:#111827;font-weight:600;padding:10px 14px;cursor:pointer}
-  .btn:hover{background:#8b5cf6;color:#fff}
-  .btn-ghost{background:transparent;border:1px solid #374151;border-radius:8px;color:#cbd5e1;padding:10px 14px;cursor:pointer}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .scroll{max-height:360px;overflow:auto;border:1px solid #1f2937;border-radius:10px}
-  table{width:100%;border-collapse:collapse}
-  th,td{padding:10px;border-bottom:1px solid #263042;text-align:left}
-  th{color:#a78bfa;font-weight:600}
-  .actions{display:flex;gap:8px}
-  .ok{color:#10b981;font-weight:600}
-  .bad{color:#ef4444;font-weight:600}
-  .camera{width:100%;aspect-ratio:16/9;background:#0b1220;border:1px dashed #374151;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#94a3b8}
-  .chip{display:inline-block;background:#0b1220;border:1px solid #374151;border-radius:999px;padding:4px 10px;margin-right:8px;font-size:.8rem;color:#cbd5e1}
+  .wrap { max-width: 1000px; margin: 32px auto; padding: 0 16px; }
+  h2 { color:#a78bfa; margin-bottom: 8px; text-align:center; }
+  p.sub { color:#94a3b8; text-align:center; margin:4px 0 16px; }
+
+  .msg { text-align:center; margin:8px 0; }
+  .msg.ok  { color:#34d399; }
+  .msg.err { color:#f87171; }
+
+  .card { background:#1f2937; border-radius:12px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,.3); margin-bottom:16px; }
+  .card h3 { color:#e5e7eb; margin:0 0 10px; font-size:18px; }
+
+  label { display:block; color:#cbd5e1; font-size:14px; margin-bottom:6px; }
+  input[type="text"], select {
+    width:100%; height:38px; background:#111827; border:1px solid #374151; border-radius:8px;
+    color:#f3f4f6; padding:0 10px; box-sizing:border-box;
+  }
+  input[readonly] { opacity:.85; }
+
+  .btn{ background:#a78bfa; color:#111827; border:none; padding:9px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
+  .btn:hover{ background:#8b5cf6; color:#fff; }
+  .btn-ghost{ background:#111827; border:1px solid #a78bfa; color:#a78bfa; }
+  .btn-ghost:hover{ background:#0c1220; border-color:#8b5cf6; color:#fff; }
+  .btn-danger{ background:#ef4444; color:#fff; }
+  .btn-danger:hover{ background:#dc2626; }
+
+  table { width:100%; border-collapse:collapse; margin-bottom:10px; }
+  th, td { padding:10px 12px; border-bottom:1px solid #374151; text-align:left; }
+  th { color:#a78bfa; }
+
+  .badge { display:inline-block; border-radius:999px; padding:2px 8px; font-size:12px; font-weight:700; }
+  .b-ok { background:#34d399; color:#062e22; }
+  .b-info { background:#60a5fa; color:#0a2540; }
+
+  .legend { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:13px; color:#cbd5e1; }
+  .legend > span { display:inline-flex; gap:6px; align-items:center; }
 </style>
 
 <div class="wrap">
-  <div class="hero">
-    <h1>Rol del Turno – Verificación de Credenciales</h1>
-    <p class="muted">Valida jugadores del encuentro, por lista o mediante QR, y registra acta si hay incidentes.</p>
-    <div style="margin-top:8px">
-      <span class="chip">Partido: <strong>Club A vs Club B</strong></span>
-      <span class="chip">Fecha: 2025-10-30 16:00</span>
-      <span class="chip">Cancha: Municipal</span>
-    </div>
+  <h2>Panel del Turno</h2>
+  <p class="sub">Verificación de jugadores por RUT, validación de edad por serie y pertenencia a club.</p>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg {% if message.tags == 'success' %}ok{% else %}err{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Selección de Partido -->
+  <div class="card">
+    <h3>Seleccionar Partido</h3>
+    <form method="get" action="{% url 'panel_turno' %}" style="display:flex; flex-wrap:wrap; gap:8px;">
+      <select name="partido_id" id="id_partido" style="flex:1;">
+        <option value="">— Selecciona —</option>
+        {% for p in partidos_turno %}
+          <option value="{{ p.0 }}" {% if partido_id and p.0 == partido_id %}selected{% endif %}>
+            #{{ p.0 }} — {{ p.1|date:"Y-m-d" }} {{ p.2|default:"—" }} — {{ p.3 }} vs {{ p.4 }} {% if p.7 %}— [{{ p.7 }}]{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <button class="btn" type="submit">Cargar</button>
+      <a class="btn-ghost" href="{% url 'panel_turno' %}">Limpiar</a>
+    </form>
+
+    {% if partido_id %}
+      <p class="sub" style="margin-top:10px;">
+        <b>Partido #{{ partido_id }}</b> — <b>{{ club_local_txt|default:"—" }}</b> vs <b>{{ club_visita_txt|default:"—" }}</b>
+        {% if partido_serie_nombre %} — Serie: <b>{{ partido_serie_nombre }}</b>{% endif %}
+      </p>
+    {% endif %}
   </div>
 
-  <div class="grid">
-    <!-- IZQUIERDA: Verificación -->
-    <div>
-      <!-- A. Verificación Manual -->
-      <div class="card">
-        <h2>A) Verificación Manual</h2>
-        <div class="row2">
-          <div>
-            <label>Rut jugador (sin DV)</label>
-            <input type="text" id="rutJugador" placeholder="Ej: 12345678">
-          </div>
-          <div>
-            <label>DV</label>
-            <input type="text" id="dvJugador" maxlength="1" placeholder="9 / K">
-          </div>
-        </div>
-        <div class="row2">
-          <div>
-            <label>Equipo</label>
-            <select id="equipoJugador">
-              <option value="local">Local</option>
-              <option value="visita">Visita</option>
-            </select>
-          </div>
-          <div>
-            <label>Nº Camiseta</label>
-            <input type="number" id="numCamiseta" placeholder="10">
-          </div>
-        </div>
-        <div class="actions" style="margin-top:4px">
-          <button class="btn" type="button" onclick="verificarManual()">Verificar y Marcar Presente</button>
-          <button class="btn-ghost" type="button" onclick="limpiarManual()">Limpiar</button>
-        </div>
+  <!-- Ingreso de Jugador -->
+  <div class="card">
+    <h3>Agregar Jugador a la Nómina</h3>
+    <form method="post" style="display:flex; flex-wrap:wrap; gap:12px;">
+      {% csrf_token %}
+      <input type="hidden" name="id_partido" value="{{ partido_id|default:'' }}">
+      <div style="flex:1;">
+        <label>RUT</label>
+        <input type="text" name="rut" id="rut" placeholder="12345678" inputmode="numeric" pattern="[0-9]{6,8}" required>
+      </div>
+      <div style="width:80px;">
+        <label>DV</label>
+        <input type="text" name="dv" id="dv" placeholder="K/0-9" maxlength="1" pattern="[0-9Kk]" required>
+      </div>
+      <div style="width:100px;">
+        <label>Camiseta</label>
+        <input type="text" name="camiseta" id="camiseta" placeholder="N°" inputmode="numeric" pattern="[0-9]{1,3}" required>
+      </div>
+      <div style="flex:1;">
+        <label>Serie</label>
+        <select name="id_serie" id="id_serie" required>
+          <option value="">— Selecciona —</option>
+          {% for s in series %}
+            <option value="{{ s.0 }}" {% if partido_id_serie and s.0 == partido_id_serie %}selected{% endif %}>{{ s.1 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="align-self:flex-end;">
+        <button type="submit" name="agregar" value="1" class="btn">Agregar</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Nómina verificada -->
+  <div class="card">
+    <h3>Nómina Verificada</h3>
+
+    {% if partido_id %}
+      <!-- Local -->
+      <h4 style="margin-top:12px;color:#e5e7eb;">
+        🏠 Local: <b>{{ club_local_txt|default:"—" }}</b>
+        <span class="badge b-info">{{ nomina_local|length }} jugadores</span>
+      </h4>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>RUT</th>
+              <th>Nombre</th>
+              <th>Serie</th>
+              <th>Camiseta</th>
+              <th>Edad</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for j in nomina_local %}
+              <tr>
+                <td>{{ j.rut }}-{{ j.dv }}</td>
+                <td>{{ j.nombre }}</td>
+                <td>{{ j.serie }}</td>
+                <td>{{ j.camiseta }}</td>
+                <td>{{ j.edad }}</td>
+                <td>
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="id_partido" value="{{ partido_id }}">
+                    <input type="hidden" name="rut" value="{{ j.rut }}">
+                    <input type="hidden" name="dv" value="{{ j.dv }}">
+                    <button class="btn-danger" type="submit" name="eliminar" value="1">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6">No hay jugadores del local.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
 
-      <!-- B. Verificación por QR -->
-      <div class="card" style="margin-top:16px">
-        <h2>B) Verificación por QR</h2>
-        <div id="qrBox" class="camera">Cámara lista… (maqueta)</div>
-        <div class="actions" style="margin-top:8px">
-          <button class="btn" type="button" onclick="iniciarQR()">Iniciar cámara</button>
-          <button class="btn-ghost" type="button" onclick="detenerQR()">Detener</button>
-        </div>
-        <small class="muted">*En producción puedes usar <em>jsQR</em> o <em>zxing</em> para decodificar.</small>
+      <!-- Visita -->
+      <h4 style="margin-top:24px;color:#e5e7eb;">
+        🛫 Visita: <b>{{ club_visita_txt|default:"—" }}</b>
+        <span class="badge b-info">{{ nomina_visita|length }} jugadores</span>
+      </h4>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>RUT</th>
+              <th>Nombre</th>
+              <th>Serie</th>
+              <th>Camiseta</th>
+              <th>Edad</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for j in nomina_visita %}
+              <tr>
+                <td>{{ j.rut }}-{{ j.dv }}</td>
+                <td>{{ j.nombre }}</td>
+                <td>{{ j.serie }}</td>
+                <td>{{ j.camiseta }}</td>
+                <td>{{ j.edad }}</td>
+                <td>
+                  <form method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="id_partido" value="{{ partido_id }}">
+                    <input type="hidden" name="rut" value="{{ j.rut }}">
+                    <input type="hidden" name="dv" value="{{ j.dv }}">
+                    <button class="btn-danger" type="submit" name="eliminar" value="1">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6">No hay jugadores de la visita.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
+    {% else %}
+      <p class="sub">Selecciona un partido para ver su nómina.</p>
+    {% endif %}
+  </div>
 
-      <!-- Lista verificada -->
-      <div class="card" style="margin-top:16px">
-        <h2>Listado de Jugadores Verificados</h2>
-        <div class="scroll">
-          <table id="tablaVerificados">
-            <thead>
-              <tr><th>Equipo</th><th>RUT</th><th>N°</th><th>Estado</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              <!-- Se llena desde JS o desde la vista al render -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- DERECHA: Acta del Turno -->
-    <div>
-      <div class="card">
-        <h2>Acta del Turno</h2>
-        <form method="post" action="#">
-          {% csrf_token %}
-          <label>Resumen de Hechos / Observaciones</label>
-          <textarea name="hechos" placeholder="Describe hechos relevantes: atrasos, carnés faltantes, conducta, etc."></textarea>
-
-          <div class="row2">
-            <div>
-              <label>Incidentes (opcional)</label>
-              <textarea name="incidentes" placeholder="Incidentes a informar al Tribunal de Disciplina"></textarea>
-            </div>
-            <div>
-              <label>Recomendación (opcional)</label>
-              <textarea name="recomendacion" placeholder="Sugerencia: multa, advertencia, informar a Tribunal, etc."></textarea>
-            </div>
-          </div>
-
-          <div class="row2">
-            <div>
-              <label>Estado</label>
-              <select name="estado_acta">
-                <option value="borrador">Borrador</option>
-                <option value="enviado">Enviado a Tribunal</option>
-              </select>
-            </div>
-            <div>
-              <label>Adjuntos (opcional)</label>
-              <input type="file" name="adjuntos" multiple>
-            </div>
-          </div>
-
-          <button class="btn" type="submit">Guardar Acta</button>
-        </form>
-      </div>
-
-      <div class="card" style="margin-top:16px">
-        <h2>Control Rápido</h2>
-        <div class="actions">
-          <button class="btn-ghost" type="button">Descargar nómina (PDF)</button>
-          <button class="btn-ghost" type="button">Enviar acta al Tribunal</button>
-        </div>
-      </div>
-    </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <a href="{% url 'dashboard' %}" style="color:#a78bfa;">← Volver al Panel</a>
   </div>
 </div>
 
 <script>
-  // --- Maqueta JS ---
-  const verificados = []; // [{equipo, rut, dv, numero, estado}]
-
-  function normalizarRut(r){ return (r||'').replace(/\D/g,''); }
-  function rutConDv(r,dv){ return `${normalizarRut(r)}-${(dv||'').toUpperCase()}`; }
-
-  function verificarManual(){
-    const r = document.getElementById('rutJugador').value;
-    const dv= document.getElementById('dvJugador').value;
-    const eq= document.getElementById('equipoJugador').value;
-    const nu= document.getElementById('numCamiseta').value;
-
-    if(!r || !dv){ alert('Ingrese RUT y DV'); return; }
-
-    const item = {equipo:eq, rut:r, dv:dv, numero:nu, estado:'OK'};
-    verificados.push(item);
-    pintarTabla();
-    limpiarManual();
-  }
-
-  function limpiarManual(){
-    document.getElementById('rutJugador').value='';
-    document.getElementById('dvJugador').value='';
-    document.getElementById('numCamiseta').value='';
-  }
-
-  function eliminarFila(idx){
-    verificados.splice(idx,1);
-    pintarTabla();
-  }
-
-  function pintarTabla(){
-    const tb = document.querySelector('#tablaVerificados tbody');
-    tb.innerHTML = '';
-    verificados.forEach((x,i)=>{
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${x.equipo}</td>
-        <td>${rutConDv(x.rut,x.dv)}</td>
-        <td>${x.numero||''}</td>
-        <td class="${x.estado==='OK'?'ok':'bad'}">${x.estado}</td>
-        <td class="actions">
-          <button class="btn-ghost" type="button" onclick="eliminarFila(${i})">Quitar</button>
-        </td>
-      `;
-      tb.appendChild(tr);
-    });
-  }
-
-  // --- QR (maqueta simple con cámara; sin decodificar) ---
-  let streamRef = null;
-  async function iniciarQR(){
-    try{
-      streamRef = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }});
-      const box = document.getElementById('qrBox');
-      box.innerHTML = '';
-      const video = document.createElement('video');
-      video.setAttribute('playsinline','');
-      video.srcObject = streamRef;
-      video.autoplay = true;
-      video.style.width = '100%';
-      video.style.borderRadius = '10px';
-      box.appendChild(video);
-    }catch(e){
-      alert('No se pudo iniciar la cámara: '+e);
-    }
-  }
-  async function detenerQR(){
-    if(streamRef){
-      streamRef.getTracks().forEach(t=>t.stop());
-      streamRef = null;
-    }
-    document.getElementById('qrBox').innerHTML = 'Cámara detenida';
-  }
+  // Normalización de inputs
+  document.addEventListener('input', (e) => {
+    if (e.target.id === 'rut') e.target.value = e.target.value.replace(/\D/g,'').slice(0,8);
+    if (e.target.id === 'dv') e.target.value = e.target.value.replace(/[^0-9Kk]/g,'').toUpperCase().slice(0,1);
+    if (e.target.id === 'camiseta') e.target.value = e.target.value.replace(/\D/g,'').slice(0,3);
+  });
 </script>
 {% endblock %}
-

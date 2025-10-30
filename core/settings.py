@@ -48,7 +48,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'anfa',
         'USER': 'postgres',
-        'PASSWORD': 'Basty2003',
+        'PASSWORD': '1231234',
         'HOST': 'localhost',
         'PORT': '5432',
     }

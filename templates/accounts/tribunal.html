@@ -1,38 +1,4 @@
 {% block content %}
-
-<!-- === HEADER SUPERIOR === -->
-<header style="background:#1f2937; color:#a78bfa; padding:1rem 2rem;
-               display:flex; justify-content:space-between; align-items:center;
-               border-radius:0 0 12px 12px; box-shadow:0 3px 8px rgba(0,0,0,0.3);">
-  <h1 style="font-size:1.3rem; margin:0; display:flex; align-items:center; gap:10px;">
-    ⚖️ Tribunal de Disciplina - ANFA
-  </h1>
-  <div style="display:flex; align-items:center; gap:16px;">
-    <span style="color:#e5e7eb; font-weight:500;">👋 Bienvenido, {{ user_nombre }}</span>
-    <a href="{% url 'logout' %}" 
-       style="background:#ef4444; color:#fff; padding:8px 14px; 
-              border-radius:8px; font-weight:600; text-decoration:none; 
-              transition:0.2s ease;">
-      🚪 Cerrar Sesión
-    </a>
-  </div>
-</header>
-
-<!-- === MENSAJE DE BIENVENIDA / ACTUALIZACIÓN === -->
-{% if mensaje_bienvenida %}
-<div id="msgPanel" style="background:#a78bfa; color:#111827; text-align:center; 
-            padding:10px; margin:16px auto; border-radius:8px; 
-            font-weight:600; max-width:400px;">
-  {{ mensaje_bienvenida }}
-</div>
-{% elif mensaje %}
-<div id="msgPanel" style="background:#a78bfa; color:#111827; text-align:center; 
-            padding:10px; margin:16px auto; border-radius:8px; 
-            font-weight:600; max-width:400px;">
-  {{ mensaje }}
-</div>
-{% endif %}
-
 <style>
   body { background:#0f172a; color:#f3f4f6; font-family:'Poppins',sans-serif; }
   .wrap { max-width:1300px; margin:36px auto; padding:0 16px; display:grid; grid-template-columns:2fr 1fr; gap:24px; }
@@ -44,12 +10,14 @@
   .scroll { max-height:420px; overflow:auto; border-radius:10px; }
   .muted { color:#94a3b8; font-size:.9rem; text-align:center; padding:8px; }
 
+  /* badges */
   .badge { display:inline-block; padding:4px 8px; border-radius:8px; font-size:.8rem; font-weight:600; }
   .badge.pendiente { background:#facc15; color:#000; }
   .badge.revision { background:#38bdf8; color:#000; }
   .badge.aprobada { background:#22c55e; color:#fff; }
   .badge.rechazada { background:#ef4444; color:#fff; }
 
+  /* botones */
   .btn-icon {
     background:#1e293b;
     border:1px solid #475569;
@@ -77,6 +45,7 @@
 
   .right-column { display:flex; flex-direction:column; gap:18px; }
 
+  /* inputs de agendar audiencia */
   form input, form textarea {
     background:#0f172a;
     border:1px solid #334155;
@@ -87,21 +56,52 @@
     font-size:.9rem;
     transition:border .2s ease;
   }
-  form input:focus, form textarea:focus { border-color:#38bdf8; outline:none; }
-  form label { color:#94a3b8; font-weight:500; display:block; margin-top:8px; margin-bottom:4px; }
+  form input:focus, form textarea:focus {
+    border-color:#38bdf8;
+    outline:none;
+  }
+  form label {
+    color:#94a3b8;
+    font-weight:500;
+    display:block;
+    margin-top:8px;
+    margin-bottom:4px;
+  }
 
+  /* ===== MODAL VER ACTA ===== */
   .modal-bg {
-    position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
     z-index:999;
   }
   .modal {
-    background:#1e293b; border-radius:10px; max-width:700px; width:90%;
-    color:#f3f4f6; padding:20px; box-shadow:0 0 20px rgba(0,0,0,0.5);
+    background:#1e293b;
+    border-radius:10px;
+    max-width:700px;
+    width:90%;
+    color:#f3f4f6;
+    padding:20px;
+    box-shadow:0 0 20px rgba(0,0,0,0.5);
   }
-  .modal header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .modal header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+  }
   .modal header h3 { color:#a78bfa; margin:0; }
-  .modal-close { background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; }
+  .modal-close {
+    background:none;
+    border:none;
+    color:#94a3b8;
+    font-size:1.2rem;
+    cursor:pointer;
+  }
 </style>
 
 <div class="wrap">
@@ -166,7 +166,9 @@
       <h2>✅ Actas Revisadas</h2>
       <div class="scroll">
         <table>
-          <thead><tr><th>Fecha</th><th>Partido</th><th>Estado</th><th>Acción</th></tr></thead>
+          <thead>
+            <tr><th>Fecha</th><th>Partido</th><th>Estado</th><th>Acción</th></tr>
+          </thead>
           <tbody>
             {% for a in actas_revisadas %}
             <tr>
@@ -259,13 +261,6 @@ function cerrarModal() {
 window.onclick = e => {
   const modal = document.getElementById('modalActa');
   if (e.target === modal) modal.style.display = "none";
-};
-
-// Desvanecer mensaje
-setTimeout(() => {
-  const msg = document.getElementById('msgPanel');
-  if (msg) msg.style.opacity = '0';
-}, 3000);
+}
 </script>
-
 {% endblock %}

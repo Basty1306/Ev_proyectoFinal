@@ -39,6 +39,33 @@ def _parse_rut_from_session(request):
     dv = dv.strip().upper()
     return rut, dv
 
+
+def _infer_rango_edad(nombre_serie:str, categoria:str):
+    """
+    Intenta inferir límite de edad desde 'Sub 17', 'Sub-13', etc.
+    Retorna (min_edad, max_edad) donde cualquiera puede ser None si no hay info.
+    """
+    txt = f"{nombre_serie or ''} {categoria or ''}".lower()
+    m = re.search(r"sub\s*-?\s*(\d{1,2})", txt)
+    if m:
+        max_e = int(m.group(1))
+        # muchas ligas no definen mínimo; dejamos None
+        return (None, max_e)
+    # Si dice 'adulta' o 'senior' podrías fijar mínimos:
+    if 'adulta' in txt or 'adulta' in txt:
+        return (18, None)
+    if 'senior' in txt:
+        return (35, None)
+    return (None, None)
+
+def _calc_edad(fecha_nac):
+    if not fecha_nac:
+        return None
+    today = date.today()
+    years = today.year - fecha_nac.year - ((today.month, today.day) < (fecha_nac.month, fecha_nac.day))
+    return years
+
+
 def _valid_hhmm(s: str) -> bool:
     return bool(re.fullmatch(r"^[0-2]\d:[0-5]\d$", s))
 
@@ -124,7 +151,7 @@ def login_view(request):
             request.session["user_is_arbitro"] = (rol_norm == "arbitro")
             request.session["BOOT_EPOCH"] = cache.get('BOOT_EPOCH')
 
-            request.session["mostrar_bienvenida"] = True
+            messages.success(request, f"Bienvenido {nombre}")
 
             if rol_norm == "administrador":
                 return redirect(reverse("dashboard"))
@@ -664,120 +691,176 @@ def editar_cargo_arbitral(request):
 @role_required("Administrador")
 def asignar_partidos(request):
     if request.method == "POST":
-        partido_id = request.POST.get("id_partido")
-        desasignar = request.POST.get("unassign")
-        rut_str = (request.POST.get("rut_arbitro") or "").strip()
-        dv = (request.POST.get("dv_arbitro") or "").strip().upper()
+        partido_id = (request.POST.get("id_partido") or "").strip()
 
-        # Validaciones básicas
-        if not partido_id or not partido_id.isdigit():
+        assign_arbitro   = "assign_arbitro"   in request.POST
+        unassign_arbitro = "unassign"         in request.POST   # botón "Quitar Árbitro"
+        assign_turno     = "assign_turno"     in request.POST
+        unassign_turno   = "unassign_turno"   in request.POST   # botón "Quitar Turno"
+
+        if not (partido_id and partido_id.isdigit()):
             messages.error(request, "ID de partido inválido.")
             return redirect("asignar_partidos")
+
         partido_id = int(partido_id)
 
-        if desasignar:
+        # ---------------------------
+        # Quitar Árbitro
+        # ---------------------------
+        if unassign_arbitro:
             try:
                 with connection.cursor() as cursor:
-                    cursor.execute("UPDATE partidos SET rut = NULL, digitov = NULL WHERE id_partido = %s;", [partido_id])
-                messages.success(request, f"Asignación eliminada del partido {partido_id}.")
+                    cursor.execute("""
+                        UPDATE partidos 
+                           SET rut = NULL, digitov = NULL
+                         WHERE id_partido = %s;
+                    """, [partido_id])
+                messages.success(request, f"Asignación de Árbitro eliminada del partido {partido_id}.")
             except Exception as e:
-                messages.error(request, f"Error al desasignar: {e}")
+                messages.error(request, f"Error al desasignar árbitro: {e}")
             return redirect("asignar_partidos")
 
-        if not (rut_str.isdigit() and len(dv) == 1 and (dv.isdigit() or dv == "K")):
-            messages.error(request, "Datos inválidos. Verifica RUT (solo números) y DV (0-9 o K).")
+        # ---------------------------
+        # Quitar Turno
+        # ---------------------------
+        if unassign_turno:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE partidos 
+                           SET rut_turno = NULL, digitov_turno = NULL
+                         WHERE id_partido = %s;
+                    """, [partido_id])
+                messages.success(request, f"Asignación de Turno eliminada del partido {partido_id}.")
+            except Exception as e:
+                messages.error(request, f"Error al desasignar turno: {e}")
             return redirect("asignar_partidos")
 
-        rut = int(rut_str)
+        # ---------------------------
+        # Asignar Árbitro
+        # ---------------------------
+        if assign_arbitro:
+            rut_str = (request.POST.get("rut_arbitro") or "").strip()
+            dv      = (request.POST.get("dv_arbitro") or "").strip().upper()
 
-        # Obtener datos del partido actual
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT fecha, hora, club_local, club_visitante
-                FROM partidos
-                WHERE id_partido = %s;
-            """, [partido_id])
-            partido = cursor.fetchone()
+            if not (rut_str.isdigit() and len(dv) == 1 and (dv.isdigit() or dv == "K")):
+                messages.error(request, "Datos inválidos para Árbitro. Verifica RUT (solo números) y DV (0-9 o K).")
+                return redirect("asignar_partidos")
 
-        if not partido:
-            messages.error(request, "Partido no encontrado.")
-            return redirect("asignar_partidos")
+            rut = int(rut_str)
 
-        fecha, hora, club_local, club_visitante = partido
-
-        # Verificar existencia del árbitro
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT u.nombre, u.apellidop, u.apellidom
-                FROM usuarios u
-                WHERE u.rut = %s AND UPPER(u.digitov) = UPPER(%s);
-            """, [rut, dv])
-            user = cursor.fetchone()
-
-        if not user:
-            messages.error(request, f"El usuario {rut}-{dv} no existe.")
-            return redirect("asignar_partidos")
-
-        # Verificar que sea árbitro
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT 1
-                FROM usuarios_roles ur
-                JOIN roles r ON r.rol_id = ur.rol_id
-                WHERE ur.rut = %s AND UPPER(ur.digitov) = UPPER(%s)
-                  AND LOWER(r.nombre_rol) = 'arbitro';
-            """, [rut, dv])
-            es_arbitro = cursor.fetchone()
-
-        if not es_arbitro:
-            messages.error(request, "El usuario indicado no posee rol de Árbitro.")
-            return redirect("asignar_partidos")
-
-        # 🔍 Validar conflicto de horario (traslape)
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT id_partido, hora
-                FROM partidos
-                WHERE rut = %s AND UPPER(digitov) = UPPER(%s)
-                  AND fecha = %s
-                  AND id_partido <> %s;
-            """, [rut, dv, fecha, partido_id])
-            conflictos = cursor.fetchall()
-
-        if conflictos:
-            for c_id, c_hora in conflictos:
-                if c_hora == hora:
-                    messages.error(request, f"Conflicto: el árbitro ya tiene un partido en el mismo horario.")
-                    return redirect("asignar_partidos")
-
-        # 🔧 Actualizar asignación
-        try:
+            # Usuario existe
             with connection.cursor() as cursor:
                 cursor.execute("""
-                    UPDATE partidos
-                    SET rut = %s, digitov = UPPER(%s)
-                    WHERE id_partido = %s;
-                """, [rut, dv, partido_id])
-            nombre_completo = " ".join(filter(None, user))
-            messages.success(
-                request,
-                f"Partido {partido_id} ({fecha} {hora} {club_local} vs {club_visitante}) "
-                f"asignado correctamente a {nombre_completo} ({rut}-{dv})."
-            )
-        except Exception as e:
-            messages.error(request, f"Error al asignar: {e}")
+                    SELECT u.nombre, u.apellidop, u.apellidom
+                      FROM usuarios u
+                     WHERE u.rut = %s AND UPPER(u.digitov) = UPPER(%s);
+                """, [rut, dv])
+                user = cursor.fetchone()
+            if not user:
+                messages.error(request, f"El RUT {rut}-{dv} no existe en usuarios.")
+                return redirect("asignar_partidos")
 
+            # Rol Árbitro activo
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 1
+                      FROM usuarios_roles ur
+                      JOIN roles r ON r.rol_id = ur.rol_id
+                     WHERE ur.rut = %s AND UPPER(ur.digitov) = UPPER(%s)
+                       AND LOWER(r.nombre_rol) = 'arbitro'
+                       AND LOWER(COALESCE(ur.estado,'')) = 'activo'
+                     LIMIT 1;
+                """, [rut, dv])
+                es_arbitro = cursor.fetchone()
+            if not es_arbitro:
+                messages.error(request, "El usuario no posee rol de Árbitro activo.")
+                return redirect("asignar_partidos")
+
+            # Guardar
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE partidos
+                           SET rut = %s, digitov = UPPER(%s)
+                         WHERE id_partido = %s;
+                    """, [rut, dv, partido_id])
+                nombre_completo = " ".join(filter(None, user))
+                messages.success(request, f"Árbitro {nombre_completo} ({rut}-{dv}) asignado al partido {partido_id}.")
+            except Exception as e:
+                messages.error(request, f"Error al asignar árbitro: {e}")
+            return redirect("asignar_partidos")
+
+        # ---------------------------
+        # Asignar Turno
+        # ---------------------------
+        if assign_turno:
+            rut_str = (request.POST.get("rut_turno") or "").strip()
+            dv      = (request.POST.get("dv_turno") or "").strip().upper()
+
+            if not (rut_str.isdigit() and len(dv) == 1 and (dv.isdigit() or dv == "K")):
+                messages.error(request, "Datos inválidos para Turno. Verifica RUT (solo números) y DV (0-9 o K).")
+                return redirect("asignar_partidos")
+
+            rut = int(rut_str)
+
+            # Usuario existe
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT u.nombre, u.apellidop, u.apellidom
+                      FROM usuarios u
+                     WHERE u.rut = %s AND UPPER(u.digitov) = UPPER(%s);
+                """, [rut, dv])
+                user = cursor.fetchone()
+            if not user:
+                messages.error(request, f"El RUT {rut}-{dv} no existe en usuarios.")
+                return redirect("asignar_partidos")
+
+            # Rol Turno activo
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 1
+                      FROM usuarios_roles ur
+                      JOIN roles r ON r.rol_id = ur.rol_id
+                     WHERE ur.rut = %s AND UPPER(ur.digitov) = UPPER(%s)
+                       AND LOWER(r.nombre_rol) = 'turno'
+                       AND LOWER(COALESCE(ur.estado,'')) = 'activo'
+                     LIMIT 1;
+                """, [rut, dv])
+                es_turno = cursor.fetchone()
+            if not es_turno:
+                messages.error(request, "El usuario no posee rol de Turno activo.")
+                return redirect("asignar_partidos")
+
+            # Guardar
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE partidos
+                           SET rut_turno = %s, digitov_turno = UPPER(%s)
+                         WHERE id_partido = %s;
+                    """, [rut, dv, partido_id])
+                nombre_completo = " ".join(filter(None, user))
+                messages.success(request, f"Turno {nombre_completo} ({rut}-{dv}) asignado al partido {partido_id}.")
+            except Exception as e:
+                messages.error(request, f"Error al asignar turno: {e}")
+            return redirect("asignar_partidos")
+
+        messages.warning(request, "Acción no reconocida.")
         return redirect("asignar_partidos")
 
-    # GET: mostrar últimos 30 días
+    # ---------------------------
+    # GET: traer partidos + árbitro + turno
+    # ---------------------------
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT p.id_partido, p.fecha, p.hora, p.club_local, p.club_visitante,
-                   p.rut, p.digitov
-            FROM partidos p
-            WHERE p.fecha >= CURRENT_DATE - INTERVAL '30 day'
-            ORDER BY (p.rut IS NULL OR TRIM(COALESCE(p.digitov,'')) = '') DESC,
-                     p.fecha ASC, p.hora ASC, p.id_partido ASC;
+                   p.rut, p.digitov,               -- Árbitro
+                   p.rut_turno, p.digitov_turno    -- Turno
+              FROM partidos p
+             WHERE p.fecha >= CURRENT_DATE - INTERVAL '30 day'
+          ORDER BY (p.rut IS NULL OR TRIM(COALESCE(p.digitov,'')) = '') DESC,
+                   p.fecha ASC, p.hora ASC, p.id_partido ASC;
         """)
         partidos = cursor.fetchall()
 
@@ -1162,9 +1245,279 @@ def calendario_arbitro(request):
 @never_cache
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def panel_turno(request):
+    # 1) Seguridad
     if not request.session.get("user_rut"):
         return redirect("login")
-    return render(request, "accounts/panel_turno.html")
+    try:
+        rut_turno, dv_turno = _parse_rut_from_session(request)
+    except Exception:
+        messages.error(request, "Sesión inválida. Vuelve a iniciar sesión.")
+        return redirect("login")
+
+    rol = (request.session.get("user_rol") or "")
+    if "turno" not in rol.lower():
+        messages.error(request, "No tienes permisos para acceder al panel del Turno.")
+        return redirect("login")
+
+    # 2) Partidos asignados a este Turno (incluye serie p/auto-selección)
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT p.id_partido, p.fecha, p.hora,
+                   COALESCE(p.club_local,'')     AS local,
+                   COALESCE(p.club_visitante,'') AS visita,
+                   COALESCE(ca.nombre,'')        AS cancha,
+                   p.id_serie,
+                   COALESCE(s.nombre,'')         AS serie
+              FROM partidos p
+         LEFT JOIN cancha ca ON ca.id_cancha = p.id_cancha
+         LEFT JOIN serie  s  ON s.id_serie = p.id_serie
+             WHERE p.rut_turno = %s
+               AND UPPER(p.digitov_turno) = UPPER(%s)
+          ORDER BY p.fecha DESC, (p.hora IS NULL) ASC, p.hora DESC, p.id_partido DESC;
+        """, [rut_turno, dv_turno])
+        partidos_turno = cursor.fetchall()
+
+    # 3) Partido seleccionado (detalles + ids de clubes para separar nómina)
+    partido_id_raw = (request.GET.get("partido_id") or request.POST.get("id_partido") or "").strip()
+    partido_id = int(partido_id_raw) if partido_id_raw.isdigit() else None
+
+    club_local_txt = club_visita_txt = partido_serie_nombre = ""
+    partido_id_serie = None
+    id_club_local_sel = id_club_visita_sel = None
+
+    if partido_id:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT p.id_partido,
+                       p.club_local, p.club_visitante,
+                       p.id_club_local, p.id_club_visitante,
+                       p.id_serie, COALESCE(s.nombre,'')
+                  FROM partidos p
+             LEFT JOIN serie s ON s.id_serie = p.id_serie
+                 WHERE p.id_partido = %s
+                   AND p.rut_turno   = %s
+                   AND UPPER(p.digitov_turno) = UPPER(%s)
+                 LIMIT 1;
+            """, [partido_id, rut_turno, dv_turno])
+            row = cursor.fetchone()
+
+        if not row:
+            messages.warning(request, "El partido seleccionado no está asignado a tu usuario de turno.")
+            partido_id = None
+        else:
+            (_,
+             club_local_txt, club_visita_txt,
+             id_club_local_sel, id_club_visita_sel,
+             partido_id_serie, partido_serie_nombre) = row
+
+    # 4) Series (para validar y para el select)
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT id_serie, nombre, COALESCE(categoria,'') FROM serie ORDER BY nombre;")
+        series_rows = cursor.fetchall()
+    series = [(r[0], r[1]) for r in series_rows]
+    serie_info = {r[0]: (r[1], r[2]) for r in series_rows}
+
+    # Helpers de edad/serie
+    def _calc_edad(fnac):
+        if not fnac:
+            return None
+        hoy = date.today()
+        try:
+            return hoy.year - fnac.year - ((hoy.month, hoy.day) < (fnac.month, fnac.day))
+        except Exception:
+            return None
+
+    def _infer_rango_edad(nombre, categoria):
+        t = (nombre or categoria or '').lower()
+        if '3ra infantil' in t:   return (8, 10)
+        if '2da infantil' in t:   return (10, 12)
+        if '1ra infantil' in t:   return (12, 14)
+        if 'juvenil' in t:        return (15, 18)
+        if '3ra adulta' in t:     return (18, None)
+        if '2da adulta' in t:     return (18, None)
+        if 'honor' in t:          return (18, None)
+        if 'super senior' in t:   return (45, None)
+        if 'senior' in t:         return (35, None)
+        if 'años dor' in t:       return (55, None)
+        return (None, None)
+
+    # 5) Nómina (dos listas: Local / Visita) usando rut_jugador + digitov
+    nomina_local, nomina_visita = [], []
+    if partido_id:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    j.rut_jugador,
+                    UPPER(COALESCE(j.digitov,''))                                   AS dv,
+                    TRIM(COALESCE(j.nombre,'') || ' ' || COALESCE(j.apellido,''))    AS nombre,
+                    COALESCE(clb.nombre,'')                                          AS club,
+                    COALESCE(s.nombre,'')                                            AS serie,
+                    COALESCE(jp.camiseta, 0)                                         AS camiseta,
+                    j.fecha_nacimiento,
+                    COALESCE(jp.id_club, j.id_club)                                  AS id_club_sel
+              FROM jugador_partido jp
+              JOIN jugadores j 
+                ON j.rut_jugador = jp.rut_jugador
+               AND UPPER(COALESCE(j.digitov,'')) = UPPER(COALESCE(jp.digitov,''))  -- clave emparejada
+         LEFT JOIN club      clb ON clb.id_club = COALESCE(jp.id_club, j.id_club)
+         LEFT JOIN serie     s   ON s.id_serie = COALESCE(jp.id_serie, j.id_serie)
+             WHERE jp.id_partido = %s
+          ORDER BY id_club_sel ASC, jp.camiseta ASC, nombre ASC;
+            """, [partido_id])
+            rows = cursor.fetchall()
+
+        for (rut_j, dv_j, nombre, club, serie_nom, camiseta, fnac, id_club_sel) in rows:
+            edad = _calc_edad(fnac)
+            item = {
+                "rut": rut_j or "",
+                "dv": (dv_j or ""),
+                "nombre": nombre or "",
+                "club": club or "",
+                "serie": serie_nom or "",
+                "camiseta": camiseta or "",
+                "edad": edad if edad is not None else "",
+                "estado": "OK",
+            }
+            if id_club_local_sel and id_club_sel == id_club_local_sel:
+                nomina_local.append(item)
+            elif id_club_visita_sel and id_club_sel == id_club_visita_sel:
+                nomina_visita.append(item)
+            else:
+                # Fallback si no coincide exactamente: compara por texto
+                if (club or "").strip().lower() == (club_local_txt or "").strip().lower():
+                    nomina_local.append(item)
+                else:
+                    nomina_visita.append(item)
+
+    # 6) POST (agregar / eliminar)
+    if request.method == "POST":
+        if not partido_id:
+            messages.error(request, "Primero selecciona un partido.")
+            return redirect("panel_turno")
+
+        # Eliminar de la nómina (requiere RUT + DV para precisión)
+        if "eliminar" in request.POST:
+            rut_del = (request.POST.get("rut") or "").strip()
+            dv_del  = (request.POST.get("dv")  or "").strip().upper()
+
+            if rut_del.isdigit() and len(dv_del) == 1:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        DELETE FROM jugador_partido jp
+                        USING jugadores j
+                        WHERE jp.id_partido     = %s
+                          AND jp.rut_jugador    = %s
+                          AND UPPER(jp.digitov) = UPPER(%s)
+                          AND j.rut_jugador     = jp.rut_jugador
+                          AND UPPER(COALESCE(j.digitov,'')) = UPPER(jp.digitov);
+                    """, [partido_id, int(rut_del), dv_del])
+                messages.success(request, "Jugador eliminado de la nómina.")
+            else:
+                messages.error(request, "RUT/DV inválidos.")
+            return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+        # Agregar / actualizar jugador en nómina
+        if "agregar" in request.POST:
+            rut_txt   = (request.POST.get("rut") or "").strip()
+            dv_txt    = (request.POST.get("dv") or "").strip().upper()
+            camiseta  = (request.POST.get("camiseta") or "").strip()
+            id_serie  = (request.POST.get("id_serie") or "").strip()
+
+            if not (rut_txt.isdigit() and camiseta.isdigit() and id_serie.isdigit()
+                    and len(dv_txt) == 1 and re.match(r'^[0-9K]$', dv_txt)):
+                messages.error(request, "Datos inválidos. Revisa RUT, DV, Serie y Camiseta.")
+                return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+            rut_jugador = int(rut_txt)
+            camiseta = int(camiseta)
+            id_serie_sel = int(id_serie)
+
+            # ids de los dos clubes del partido
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id_club_local, id_club_visitante
+                      FROM partidos
+                     WHERE id_partido = %s
+                """, [partido_id])
+                pcl, pcv = cursor.fetchone()
+
+            # jugador por RUT/DV
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT j.rut_jugador, j.id_club, j.fecha_nacimiento, UPPER(COALESCE(j.digitov,'')) AS dv
+                      FROM jugadores j
+                     WHERE j.rut_jugador = %s
+                       AND UPPER(COALESCE(j.digitov,'')) = UPPER(%s)
+                     LIMIT 1;
+                """, [rut_jugador, dv_txt])
+                jrow = cursor.fetchone()
+
+            if not jrow:
+                messages.error(request, "El jugador no existe con ese RUT/DV.")
+                return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+            _, id_club_j, fnac, dv_j = jrow
+
+            # Validar club del jugador vs partido
+            if id_club_j not in (pcl, pcv):
+                messages.error(request, "El jugador no pertenece a un club que dispute este partido.")
+                return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+            # Validar edad vs serie
+            nombre_serie, cat_serie = serie_info.get(id_serie_sel, ("",""))
+            min_e, max_e = _infer_rango_edad(nombre_serie, cat_serie)
+            edad = _calc_edad(fnac)
+            if edad is not None and ((min_e is not None and edad < min_e) or (max_e is not None and edad > max_e)):
+                messages.error(request, f"El jugador no cumple la edad para la serie {nombre_serie}.")
+                return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+            # Upsert por (id_partido, rut_jugador, digitov)
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO jugador_partido 
+                            (id_partido, rut_jugador, digitov, camiseta, id_club, id_serie)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id_partido, rut_jugador, digitov) DO UPDATE
+                           SET camiseta = EXCLUDED.camiseta,
+                               id_club  = EXCLUDED.id_club,
+                               id_serie = EXCLUDED.id_serie;
+                    """, [partido_id, rut_jugador, dv_j, camiseta, id_club_j, id_serie_sel])
+                messages.success(request, "Jugador agregado/actualizado para este partido.")
+            except Exception as e:
+                emsg = str(e).lower()
+                if "uq_jp_partido_club_camiseta" in emsg or "unique" in emsg:
+                    messages.error(request, "Ya existe un jugador con esa camiseta para este club en este partido.")
+                elif "no hay restricción única" in emsg:
+                    messages.error(request, "Falta la restricción única (id_partido, rut_jugador, digitov) para usar ON CONFLICT.")
+                else:
+                    messages.error(request, f"Error al agregar: {e}")
+
+            return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+        # Opcionales
+        if "guardar_borrador" in request.POST:
+            messages.info(request, "Borrador guardado (placeholder).")
+            return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+        if "cerrar_nomina" in request.POST:
+            messages.success(request, "Nómina cerrada (placeholder).")
+            return redirect(f"{reverse('panel_turno')}?partido_id={partido_id}")
+
+    # 7) Render
+    ctx = {
+        "partidos_turno": partidos_turno,
+        "partido_id": partido_id,
+        "partido_id_serie": partido_id_serie,         # Para auto-seleccionar en el <select>
+        "partido_serie_nombre": partido_serie_nombre, # Informativo
+        "club_local_txt": club_local_txt,
+        "club_visita_txt": club_visita_txt,
+        "series": series,
+        "nomina_local": nomina_local,
+        "nomina_visita": nomina_visita,
+        "url_buscar_jugador": "",
+    }
+    return render(request, "accounts/panel_turno.html", ctx)
 
 
 # ============================================================
@@ -1174,15 +1527,13 @@ def panel_turno(request):
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 @role_required("Tribunal de Disciplina")
 def panel_tribunal(request):
-    """Panel principal del Tribunal de Disciplina."""
+    """Panel del tribunal: muestra actas recibidas y revisadas."""
     if not request.session.get("user_rut"):
         return redirect("login")
 
     user_nombre = request.session.get("user_nombre", "Usuario")
 
-    # ============================================================
     # 🔹 Si el tribunal actualiza una acta
-    # ============================================================
     if request.method == "POST":
         id_acta = request.POST.get("id_acta")
         nuevo_estado = request.POST.get("estado")
@@ -1192,32 +1543,18 @@ def panel_tribunal(request):
             with connection.cursor() as cursor:
                 cursor.execute("""
                     UPDATE estado_acta
-                    SET nombre_estado = %s,
-                        descripcion = %s
-                    WHERE id_acta = %s;
+                       SET nombre_estado = %s,
+                           descripcion = %s
+                     WHERE id_acta = %s;
                 """, [
                     nuevo_estado,
                     observacion or f"Estado actualizado a '{nuevo_estado}' por el Tribunal de Disciplina.",
                     id_acta
                 ])
-            # ✅ Mensaje visible solo dentro del panel
-            request.session["mensaje_acta"] = f"✅ Acta #{id_acta} actualizada a '{nuevo_estado}'."
+            messages.success(request, f"✅ Acta #{id_acta} actualizada a '{nuevo_estado}'.")
             return redirect("panel_tribunal")
 
-    # ============================================================
-    # 🔹 Mensaje de bienvenida (solo visible en panel)
-    # ============================================================
-    mensaje_bienvenida = None
-    if not request.session.get("bienvenida_mostrada", False):
-        mensaje_bienvenida = f"Bienvenido {user_nombre}"
-        request.session["bienvenida_mostrada"] = True  # Se mostrará solo una vez
-
-    # 🔹 Mostrar mensajes del panel (no en login)
-    mensaje = request.session.pop("mensaje_acta", None)
-
-    # ============================================================
     # 🔹 Consultas separadas
-    # ============================================================
     with connection.cursor() as cursor:
         # Actas pendientes o en revisión
         cursor.execute("""
@@ -1233,7 +1570,7 @@ def panel_tribunal(request):
         """)
         actas_recibidas = cursor.fetchall()
 
-        # Actas revisadas
+        # Actas revisadas (ya Aprobadas o Rechazadas)
         cursor.execute("""
             SELECT 
                 a.id_acta, p.club_local, p.club_visitante, p.fecha,
@@ -1247,19 +1584,13 @@ def panel_tribunal(request):
         """)
         actas_revisadas = cursor.fetchall()
 
-    # ============================================================
-    # 🔹 Contexto
-    # ============================================================
     contexto = {
         "user_nombre": user_nombre,
         "actas_recibidas": actas_recibidas,
         "actas_revisadas": actas_revisadas,
-        "mensaje": mensaje,                    # Actas actualizadas
-        "mensaje_bienvenida": mensaje_bienvenida,  # Solo visible en el panel
     }
 
     return render(request, "accounts/tribunal.html", contexto)
-
 
 
 
@@ -1283,6 +1614,7 @@ def panel_secretaria(request):
     return render(request, "accounts/secretaria.html", {
         "user_nombre": user_nombre,
     })
+
 
 # ============================================================
 # HISTORIAL Y DETALLE DE ACTAS DEL ÁRBITRO
@@ -1312,20 +1644,18 @@ def actas_arbitro(request):
                 JOIN partidos p ON p.id_partido = a.id_partido
                 LEFT JOIN cancha ca ON ca.id_cancha = p.id_cancha
                 LEFT JOIN estado_acta ea ON ea.id_acta = a.id_acta
-                WHERE a.id_acta = %s
+                WHERE a.id_acta = %s AND a.rut = %s AND UPPER(a.digitov) = UPPER(%s)
                 LIMIT 1;
-            """, [id_ver])
+            """, [id_ver, rut, dv])
             acta = cursor.fetchone()
 
-            # 🔸 Si no se encuentra el acta, mensaje más coherente
             if not acta:
-                messages.warning(request, "El acta no está disponible o fue eliminada.")
+                messages.error(request, "No se encontró el acta solicitada.")
                 return redirect("actas_arbitro")
 
-            # 🔹 Renderizar el detalle del acta
             return render(request, "accounts/ver_acta.html", {"acta": acta})
 
-        # Si no se pasa el parámetro ?ver, mostrar el listado completo
+        # Si no se pasa el parámetro ?ver, mostrar el listado
         cursor.execute("""
             SELECT 
                 a.id_acta,
